@@ -1,0 +1,38 @@
+model_name: random_forest
+search_space:
+  random_forest_n_estimators:
+    type: int
+    low: 50
+    high: 500
+  random_forest_max_depth:
+    type: int
+    low: 1
+    high: 30
+  random_forest_min_samples_split:
+    type: int
+    low: 2
+    high: 20
+  random_forest_min_samples_leaf:
+    type: int
+    low: 1
+    high: 10
+  random_forest_max_features:
+    type: categorical
+    choices: ["sqrt", "log2", null]
+  random_forest_criterion:
+    type: categorical
+    choices: ["gini", "entropy"]
+  random_forest_bootstrap:
+    type: categorical
+    choices: [True, False]
+
+  # --- Fixed Parameters ---
+  random_forest_class_weight:
+    type: fixed
+    value: balanced
+  random_forest_n_jobs:
+    type: fixed
+    value: -1
+  random_forest_verbose:
+    type: fixed
+    value: 0

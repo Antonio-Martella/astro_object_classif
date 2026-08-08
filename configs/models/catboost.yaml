@@ -1,0 +1,43 @@
+model_name: catboost
+search_space:
+  catboost_iterations:
+    type: int
+    low: 80
+    high: 1000
+  catboost_learning_rate:
+    type: float
+    low: 0.001
+    high: 0.3
+    log: true
+  catboost_depth:
+    type: int
+    low: 1
+    high: 10
+  catboost_l2_leaf_reg:
+    type: float
+    low: 0.00001
+    high: 100
+    log: true
+  catboost_random_strength:
+    type: float
+    low: 0.001
+    high: 10.0
+    log: true
+  catboost_border_count:
+    type: int
+    low: 32
+    high: 255
+
+  #fixed_params:
+  catboost_loss_function: 
+    type: fixed
+    value: MultiClass
+  catboost_auto_class_weights: 
+    type: fixed
+    value: Balanced
+  catboost_verbose: 
+    type: fixed
+    value: 0
+  catboost_thread_count: 
+    type: fixed
+    value: -1

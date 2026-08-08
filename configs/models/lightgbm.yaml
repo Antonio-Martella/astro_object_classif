@@ -1,0 +1,56 @@
+model_name: lightgbm
+search_space:
+  lightgbm_n_estimators:
+    type: int
+    low: 50
+    high: 800
+  lightgbm_learning_rate:
+    type: float
+    low: 0.001
+    high: 0.3
+    log: true
+  lightgbm_num_leaves:
+    type: int
+    low: 20
+    high: 150
+  lightgbm_max_depth:
+    type: int
+    low: 1
+    high: 30
+  lightgbm_min_child_samples:
+    type: int
+    low: 5
+    high: 100
+  lightgbm_subsample:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+  lightgbm_colsample_bytree:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+  lightgbm_reg_alpha:
+    type: float
+    low: 0.001
+    high: 10
+    log: true
+  lightgbm_reg_lambda:
+    type: float
+    low: 0.001
+    high: 10
+    log: true 
+
+  lightgbm_class_weight: 
+    type: fixed
+    value: "balanced"       # Messo tra virgolette per sicurezza statistica
+  lightgbm_objective: 
+    type: fixed
+    value: "multiclass"     # Sostituito da multi:softprob a multiclass
+  lightgbm_n_jobs: 
+    type: fixed
+    value: -1
+  lightgbm_verbose: 
+    type: fixed
+    value: -1

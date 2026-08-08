@@ -1,0 +1,76 @@
+model_name: svc
+search_space:
+  
+  # --- Regolarizzazione ---
+  # Spazio di ricerca ampliato. Valori molto alti (fino a 1000) permettono
+  # al modello di adattarsi a confini di decisione estremamente complessi.
+  svc_C:
+      type: float
+      low: 0.001
+      high: 100.0
+      log: true
+
+  # --- Decision Function Shape ---
+  svc_decision_function_shape:
+    type: categorical
+    choices: ['ovr', 'ovo']
+
+  # --- Il Kernel ---
+  svc_kernel:
+    type: categorical
+    choices: ['linear', 'rbf', 'poly', 'sigmoid']
+
+  # --- Gamma Numerico (Precisione Estrema) ---
+  # Invece di usare 'scale', facciamo cercare a Optuna il valore esatto.
+  # (Verrà ignorato automaticamente se il kernel è 'linear')
+  svc_gamma:
+    type: float
+    low: 0.0001
+    high: 10.0
+    log: true
+    
+  # --- Grado del polinomio ---
+  # (Verrà ignorato se il kernel non è 'poly')
+  svc_degree:
+    type: int
+    low: 2
+    high: 4
+
+  # --- Termine Indipendente (Bias nel Kernel) ---
+  # Molto utile per 'poly' e 'sigmoid'. Controlla quanto i valori alti 
+  # dei polinomi influenzano il modello rispetto ai valori bassi.
+  svc_coef0:
+    type: float
+    low: -10.0
+    high: 10.0
+    log: false
+
+  # --- Euristiche e Ottimizzazione Interna ---
+  # shrinking: Se True, usa un'euristica per velocizzare l'addestramento. 
+  # A volte disabilitarlo (False) migliora la precisione millimetrica.
+  svc_shrinking:
+    type: categorical
+    choices: [true, false]
+    
+  # tol: Criterio di tolleranza per fermare l'algoritmo. 
+  # Valori bassi = convergenza più lenta ma più accurata.
+  svc_tol:
+    type: float
+    low: 1.0e-4
+    high: 1.0e-2
+    log: true
+
+  # --- Parametri Fissi ---
+  svc_probability:
+    type: fixed
+    value: true
+    
+  svc_class_weight:
+    type: fixed
+    value: 'balanced'
+    
+  # Rimuoviamo il limite artificiale! -1 significa che andrà avanti 
+  # a calcolare finché non trova il minimo matematico perfetto.
+  svc_max_iter:
+    type: fixed
+    value: 15000

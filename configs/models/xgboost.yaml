@@ -1,0 +1,45 @@
+model_name: xgboost
+search_space:
+  xgboost_n_estimators:
+    type: int
+    low: 50
+    high: 800
+  xgboost_learning_rate:
+    type: float
+    low: 0.001
+    high: 0.3
+    log: true
+  xgboost_max_depth:
+    type: int
+    low: 1
+    high: 30
+  xgboost_min_child_weight:
+    type: int
+    low: 1
+    high: 5
+  xgboost_subsample:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: False
+  xgboost_colsample_bytree:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: False
+  xgboost_reg_alpha:
+    type: float
+    low: 0.001
+    high: 10
+    log: true
+  xgboost_reg_lambda:
+    type: float
+    low: 0.001
+    high: 10
+    log: true
+  xgboost_objective: 
+    type: fixed
+    value: "multi:softprob"
+  xgboost_n_jobs:
+    type: fixed
+    value: -1

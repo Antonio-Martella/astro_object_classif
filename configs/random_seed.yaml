@@ -1,0 +1,17 @@
+global_seed:
+  # seed split hodlout/train
+  random_seed_holdout: 42
+  # seed dei models (utilizzato nei file in src/models/)
+  random_seed_models: 42
+  # seed per la divisione train/test (utile se usi una strategia di resampling che richiede una divisione esplicita, utilizzato in src/data/data_loader.py)
+  random_seed_train_split: 42
+  # seed per il resempling dei dati
+  random_seed_resempling: 42
+  # seed per riproducibilita dello StratifiedGroupKFold nella cross-validation (src/training/cross_validation.py)
+  random_seed_sgkf: 42
+  # 
+  random_seed_training: 42
+  # Seed per il pescaggio degli iperparametri dai range forniti
+  random_seed_optuna: 42
+  # Seed per lo splitting del dataset in train e test (utilizzato in src/data/data_loader.py)
+  random_seed_trainsplit: 42

@@ -1,0 +1,77 @@
+# --- Acquisizione Dati da Kaggle---
+kaggle:
+  dataset_path: "fedesoriano/stellar-classification-dataset-sdss17"
+  file_name: "star_classification.csv"
+  dataset_columns:
+    - "obj_ID"
+    - "alpha"
+    - "delta"
+    - "u"
+    - "g"
+    - "r"
+    - "i"
+    - "z"
+    - "run_ID"
+    - "rerun_ID"
+    - "cam_col"
+    - "field_ID"
+    - "spec_obj_ID"
+    - "class"
+    - "redshift"
+    - "plate"
+    - "MJD"
+    - "fiber_ID"
+  dataset_length: 100000
+
+
+# --- Split del dataset in holdout (simulazione di produzione) e dataset per training modelli ---
+split_dataset_holdout:
+  holdout_split: 0.2
+  ref_col: "MJD"
+
+
+# --- Split del dataset in holdout (simulazione di produzione) e dataset per training modelli ---
+split_dataset_training:
+  col_group: "field_ID"
+  train_split: 0.85
+  target_column: "class"
+
+
+# --- Cleaning dei dataset ---
+cleaning_preprocessing:
+  # Valori anomaly da sostituire con NaN
+  anomaly_values:
+    - -9999
+  # Nuove features da creare (dalla loro scrittura già ce la loro prescrizione)
+  new_features: 
+    - ["u", "g"]
+    - ["g", "r"]
+    - ["r", "i"]
+    - ["i", "z"]
+  # Colonne da rimuovere dal dataset 
+  columns_to_drop:
+    - "obj_ID"
+    - "alpha"
+    - "delta"
+    - "u"
+    - "g"
+    - "i"
+    - "z"
+    - "run_ID"
+    - "rerun_ID"
+    - "cam_col"
+    - "spec_obj_ID"
+    - "plate"
+    - "MJD"
+    - "fiber_ID"
+
+# --- Preprocessing ----
+preprocessing:
+  # Colonne da scalare
+  columns_to_scale:
+    - "r"
+    - "redshift"
+    - "u-g"
+    - "g-r"
+    - "r-i"
+    - "i-z"

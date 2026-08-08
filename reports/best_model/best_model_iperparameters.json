@@ -1,0 +1,13 @@
+{
+    "n_estimators": 321,
+    "max_depth": 22,
+    "min_samples_split": 2,
+    "min_samples_leaf": 10,
+    "max_features": "sqrt",
+    "criterion": "entropy",
+    "bootstrap": true,
+    "class_weight": "balanced",
+    "n_jobs": -1,
+    "verbose": 0,
+    "random_state": 42
+}

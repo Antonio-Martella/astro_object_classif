@@ -1,0 +1,42 @@
+experiment:
+  # Experiment Name
+  name_experiment: "Astro_Object_Classification"
+  
+  # Available models that Optuna can choose from at each test
+  model_name: 
+    - "dense_nn"
+    - "random_forest"
+    - "xgboost"
+    - "lightgbm"
+    - "catboost"
+    - "svc"
+    - "sgd"
+    - "logreg"
+
+  # Number of trials for Optuna optimization
+  n_trials: 1
+
+  # Number of initial random trials before Optuna starts using its optimization strategies
+  n_startup_trials: 100
+
+  # Metric to optimize during the hyperparameter tuning process
+  metric_to_optimize: "f1"
+
+  # Whether to use a multivariate approach in the Optuna optimization process
+  multivariate: True
+
+  # Direction of optimization for the specified metric
+  direction: "maximize"
+
+  # Number of folds for cross-validation during the hyperparameter tuning process
+  n_folds_cv: 3
+
+  # Resampling strategy to handle class imbalance in the dataset
+  resampling_strategy:
+    type: categorical
+    choices: ["class_weight", "smote", "undersampling"]
+    
+  # Scaler strategy to normalize or standardize the features in the dataset
+  scaler_strategy:
+    type: categorical
+    choices: ["standard", "robust", "minmax"]

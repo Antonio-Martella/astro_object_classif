@@ -1,0 +1,15 @@
+data/*.csv
+data/*.json
+logs/*.log
+
+#saved_models/*.pkl
+__pycache__/
+.pytest_cache/
+mlruns/
+mlflow.db/
+*.log
+venv/
+.env
+.ruff_cache
+.mypy_cache
+catboost_info/

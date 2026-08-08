@@ -1,0 +1,13 @@
+{
+    "split_prod_ratio": 0.2,
+    "n_train": 80000,
+    "n_prod": 20000,
+    "train_mjd_min": 51608,
+    "train_mjd_max": 57312,
+    "prod_mjd_min": 57312,
+    "prod_mjd_max": 58932,
+    "split_method": "time_based_MJD",
+    "raw_path": "/data/raw/Star_Classification.csv",
+    "training_path": "/data/interim/training_dataset.csv",
+    "production_path": "/data/interim/holdout_dataset.csv"
+}

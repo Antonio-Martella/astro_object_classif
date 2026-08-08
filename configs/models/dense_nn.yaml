@@ -1,0 +1,138 @@
+# Definizione del nome del modello da ottimizzare. Questo nome deve corrispondere a quello presente nella cartella "src/models" e nel file "src/models/model_factory.py"
+model_name: dense_nn
+
+# Specifica lo spazio di ricerca per l'ottimizzazione dei parametri del modello
+search_space:
+
+  # Numero di layer della rete neurale 
+  dense_nn_num_layer:
+    type: int
+    low: 2
+    high: 5
+  
+  # Numero di perceptroni dell'input layer che andaranno a diminuire di un fattore 2 ad ogni layer successivo (es. 128 -> 64 -> 32) fino ad un massimo di 5 layer
+  dense_nn_num_perceptron:
+    type: categorical
+    choices: [128, 256, 1024, 2048]
+  
+  # Imposta come variabile float il drop_out 
+  dense_nn_drop_out:
+    type: float
+    low: 0.0
+    high: 0.5
+    log: False
+  
+  # Imposta come variabile categorica la normalizzazione del batch
+  dense_nn_batch_norm:
+    type: categorical
+    choices: [True, False]
+  
+  # Range di valori per il learning rate da ottimizzare in scala logaritimica
+  dense_nn_learning_rate:
+    type: float
+    low: 0.0005
+    high: 0.05
+    log: True
+
+  # Specifica la funzione di attivazione per i layer nascosti
+  dense_nn_hidden_act_func:
+    type: categorical
+    choices: ["relu", "leaky_relu", "tanh"]
+
+  # Specifica la dimensione del batch da utilizzare durante l'addestramento del modello
+  dense_nn_batch_size:
+    type: categorical
+    choices: [64, 128, 256, 512, 1024]
+
+  # Specifica l'ottimizzatore da utilizzare per l'addestramento del modello
+  dense_nn_optimizer:
+    type: categorical
+    choices: ['adam', 'adamw', 'rmsprop', 'sgd']
+  
+  # Specifica il weight decay per l'ottimizzatore AdamW, RMSProp e SGD
+  weight_decay:
+    type: float
+    low: 0.000001
+    high: 0.1
+    log: True
+  
+  # Specifica i parametri beta_1 e beta_2 per l'ottimizzatore Adam e AdamW, 
+  # il parametro rho per l'ottimizzatore RMSProp, 
+  # il momentum per l'ottimizzatore SGD e RMSProp, 
+  # e se utilizzare o meno Nesterov momentum per l'ottimizzatore SGD
+  dense_nn_beta_1:
+    type: float
+    low: 0.85
+    high: 0.99
+    log: False
+  
+  dense_nn_beta_2:
+    type: float
+    low: 0.98
+    high: 0.9999
+    log: False
+  
+  dense_nn_rho:
+    type: float
+    low: 0.8
+    high: 0.99
+    log: False
+
+  dense_nn_momentum_rmsprop:
+    type: float
+    low: 0.0
+    high: 0.9
+    log: False
+
+  dense_nn_momentum_sgd:
+    type: float
+    low: 0.5
+    high: 0.99
+    log: False
+
+  dense_nn_nesterov:
+    type: categorical
+    choices: [True, False]
+
+  # --------------------------------------
+  # --- Fixed Parameters for the Model ---
+  # --------------------------------------
+  # Specifica la metrica da monitorare per la callback di riduzione del learning rate e per l'early stopping
+  dense_nn_metric_monitor_callback:
+    type: fixed
+    value: "val_loss"
+
+  # Specifica il fattore di riduzione del learning rate quando la metrica monitorata non migliora per un certo numero di epoche
+  dense_nn_factor_reducer_callback:
+    type: fixed
+    value: 0.75
+
+  # Specifica il numero di epoche senza miglioramento della metrica monitorata prima di ridurre il learning rate
+  dense_nn_patience_lrreducer:
+    type: fixed
+    value: 2
+  
+  # Specifica il numero di epoche senza miglioramento della metrica monitorata prima di fermare l'addestramento del modello
+  patience_earlystop:
+    type: fixed
+    value: 3
+  
+  # Specifica la verbosità della callback (0 = silenzioso, 1 = barra di avanzamento, 2 = dettagli)
+  dense_nn_verbose_cb:
+    type: fixed
+    value: 0
+  
+  # Funzione d'attivazione per l'output layer (softmax per classificazione multi-classe)
+  dense_nn_act_func:
+    type: fixed
+    value: "softmax"
+  
+  # Specifica se utilizzare o meno il bilanciamento delle classi durante l'addestramento del modello
+  dense_nn_class_weights:
+    type: fixed
+    value: True
+
+  # Specifica se vogliamo un modello verboso o meno durante l'addestramento del modello (0 = silenzioso, 1 = barra di avanzamento, 2 = dettagli)
+  dense_nn_verbose:
+    type: fixed
+    value: 0

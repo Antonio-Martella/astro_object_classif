@@ -1,0 +1,41 @@
+model_name: logreg
+search_space:
+  # C: La forza della regolarizzazione (più alto è C, meno regolarizzazione, più basso è C, più regolarizzazione)
+  logreg_C:
+    type: float
+    low: 0.001
+    high: 100
+    log: True
+  # l1_ratio: il parametro di regolarizzazione per ElasticNet, bilancia tra L1 e L2 (0 = solo L2, 1 = solo L1)
+  logreg_l1_ratio:
+    type: float
+    low: 0.0
+    high: 1.0
+    log: False
+  # max_iter: numero massimo di iterazioni per la convergenza del modello
+  logreg_max_iter:
+    type: int
+    low: 1000
+    high: 5000
+
+  # --- Fixed parameters for the model (not optimized) ---
+  # solver: 'saga' è l'unico che supporta tutte le penalizzazioni (l1, l2, elasticnet) e funziona bene con dataset di grandi dimensioni
+  logreg_solver:
+    type: fixed
+    value: 'saga'
+  # penalty: elasticnet combina L1 e L2, è una scelta flessibile che può adattarsi a diversi tipi di dati e aiuta a prevenire l'overfitting
+  logreg_penalty:
+    type: fixed
+    value: 'elasticnet'
+  # class_weight: 'balanced' è utile per gestire dataset sbilanciati, bilanciando i pesi delle classi in base alla loro frequenza
+  logreg_class_weight: 
+    type: fixed
+    value: 'balanced'
+  # verbose: 0 per non stampare messaggi durante l'addestramento, -1 per stampare tutti i messaggi (utile per il debug)
+  logreg_verbose: 
+    type: fixed
+    value: 0
+  # n_jobs: -1 per utilizzare tutti i core della CPU e velocizzare l'addestramento, soprattutto su dataset di grandi dimensioni
+  logreg_n_jobs: 
+    type: fixed
+    value: -1

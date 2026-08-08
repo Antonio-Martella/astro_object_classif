@@ -1,0 +1,69 @@
+model_name: sgd
+search_space:
+  
+  # --- Tipo di Modello (Funzione di Perdita) ---
+  # hinge: Support Vector Machine (NON restituisce probabilità calibrate)
+  # log_loss: Logistic Regression (restituisce probabilità)
+  # modified_huber: Robusto agli outlier e restituisce probabilità
+  sgd_loss:
+    type: categorical
+    choices: ['log_loss', 'modified_huber']
+
+  # --- Regolarizzazione ---
+  # A differenza di LogisticRegression, qui possiamo lasciare scegliere 
+  # a Optuna la penalità senza che il codice vada in crash
+  sgd_penalty:
+    type: categorical
+    choices: ['l2', 'l1', 'elasticnet']
+    
+  # Moltiplicatore della regolarizzazione (equivalente all'inverso di 'C')
+  alpha:
+    type: float
+    low: 1.0e-6
+    high: 0.1
+    log: true
+    
+  # Usato solo se Optuna sceglie penalty: 'elasticnet' (altrimenti ignorato)
+  sgd_l1_ratio:
+    type: float
+    low: 0.0
+    high: 1.0
+    log: false
+
+  # --- Strategia di Learning Rate ---
+  # optimal: calcolato automaticamente da una formula interna
+  # adaptive: rimane costante finché il modello migliora, poi si riduce
+  # invscaling: decresce gradualmente a ogni epoca
+  sgd_learning_rate:
+    type: categorical
+    choices: ['optimal', 'adaptive', 'invscaling']
+    
+  # Learning rate iniziale (usato da 'adaptive' e 'invscaling', ignorato da 'optimal')
+  eta0:
+    type: float
+    low: 1.0e-4
+    high: 0.1
+    log: true
+
+  # --- Parametri Fissi ---
+  
+  # L'Early Stopping interno di SGD è eccellente, lo attiviamo di default!
+  sgd_early_stopping:
+    type: fixed
+    value: true
+  
+  sgd_max_iter:
+    type: fixed
+    value: 5000
+    
+  sgd_class_weight: 
+    type: fixed
+    value: 'balanced'
+    
+  sgd_n_jobs: 
+    type: fixed
+    value: -1
+    
+  sgd_verbose:
+    type: fixed
+    value: 0
