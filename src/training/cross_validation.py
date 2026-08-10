@@ -1,12 +1,11 @@
+from typing import Any
+
 import pandas as pd
-from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.model_selection import StratifiedGroupKFold
 
 from configs.random_seed_loader import load_random_seed_config
 from configs.schemas_loader import load_preprocessing_config
-from src.data.preprocessing import build_stateful_ml_pipeline
-from src.data.resampling import ResamplerFactory
-from src.models.model_factory import ModelFactory
+from src.training.pipeline import build_training_pipeline
 from src.utils.metrics import evaluate_classification_metrics
 
 
@@ -18,8 +17,8 @@ def run_cross_validation(
     n_splits: int = 5,
     resampling_strategy: str = "class_weight",
     scaler_strategy: str = "standard",
-    custom_params: dict | None = None,
-):
+    custom_params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Esegue una Cross-Validation robusta (Stratified Group K-Fold) per valutare le performance di un modello.
 
@@ -75,50 +74,18 @@ def run_cross_validation(
     all_folds_metrics = []
 
     for train_idx, val_idx in sgkf.split(X, y, groups=groups):
-        # print(f"Valutazione fold {fold + 1}/{n_splits}...")
-
-        # ##########################################################
-        # ### 1. CREAZIONE DEI DATASET DI TRAINING E DI VALIDAZIONE ###
-        # ##########################################################
-        # Definisco i dataset di training e di validazione del fold
         X_fold_train, X_fold_val = pd.DataFrame(X).iloc[train_idx], pd.DataFrame(X).iloc[val_idx]
         y_fold_train, y_fold_val = pd.Series(y).iloc[train_idx], pd.Series(y).iloc[val_idx]
 
-        # ###############################################################
-        # ### 2. DEFINIZIONE DELLA PIPELINE DI PREPROCESSING PER IL FOLD ###
-        # ###############################################################
-        # Definisco i vari step della pipeline
-        # 1. Preprocessing
-        preprocessor = build_stateful_ml_pipeline(preprocessing_config, scaler_strategy=scaler_strategy)
-        # 2. strategia di resempling scelto nel file di configurazione (configs/config.py)
-        resempler = ResamplerFactory.get_resempler(strategy_name=resampling_strategy)
-        # 3. Modello di trainingin cui verifico se vengono passati parametri al modello
-        # (per esempio dal file di optimization.py) oppure se pescarli dal file di configurazione
-        if custom_params is not None:
-            model = ModelFactory.get_model(model_name, **custom_params)
-        else:
-            model = ModelFactory.get_model(model_name)
+        pipeline = build_training_pipeline(
+            preprocessing_config, model_name, scaler_strategy, resampling_strategy, custom_params
+        )
 
-        # Aggrego tutti gli steps
-        steps = preprocessor.steps.copy()
-        if resempler is not None:
-            steps.append(("resempler", resempler))
-        steps.append(("model", model))
-
-        # Definisco la pipeline con gli steps scritti sopra
-        pipeline = ImbPipeline(steps=steps)
-
-        # ############################
-        # ### 3. TRAINING DEL MODELLO ###
-        # ############################
         pipeline.fit(X_fold_train, y_fold_train)
 
-        # Valuatazuone degli score sul dataset di validazioe del fold (loss, acc, f1, precision, recall, roc-auc)
         fold_scores = evaluate_classification_metrics(pipeline, X_fold_val, y_fold_val)
         all_folds_metrics.append(fold_scores)
 
-    # Trasformo la lista degli score in un DataFrame pandas per facilità di integrazione
     df_metrics = pd.DataFrame(all_folds_metrics)
 
-    # Viene restituita un dizionario di metriche medie
     return df_metrics.mean().to_dict()

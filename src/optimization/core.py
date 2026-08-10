@@ -11,7 +11,7 @@ from optuna.trial import FrozenTrial
 # Local imports
 from configs.random_seed_loader import load_random_seed_config
 from configs.tuning_config import TuningConfigLoader
-from src.training.cv import run_cross_validation
+from src.training.cross_validation import run_cross_validation
 from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)

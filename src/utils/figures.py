@@ -1,24 +1,21 @@
 from pathlib import Path
 
-import joblib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
 
 from configs.paths import DataPathConfig
 
 path_config = DataPathConfig()
 
 
-def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, save_path: Path):
-    with open(path_config.target_le, "rb") as f:
-        le = joblib.load(f)
-
+def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, label_condoer: LabelEncoder, save_path: Path) -> None:
     if any(isinstance(x, int) for x in y_true) and any(isinstance(x, int) for x in y_pred):
-        y_true = le.inverse_transform(y_true)
-        y_pred = le.inverse_transform(y_pred)
+        y_true = label_condoer.inverse_transform(y_true)
+        y_pred = label_condoer.inverse_transform(y_pred)
     elif (
         any(isinstance(x, int) for x in y_true)
         and any(not isinstance(x, int) for x in y_pred)
@@ -27,10 +24,12 @@ def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, save_path: Path)
     ):
         raise ValueError("Attenzione il formato di y_true e y_pred non coincidono!")
 
-    cm = confusion_matrix(y_true, y_pred, labels=le.classes_)
+    cm = confusion_matrix(y_true, y_pred, labels=label_condoer.classes_)
 
     plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, cmap="coolwarm", xticklabels=le.classes_, yticklabels=le.classes_, fmt="d")
+    sns.heatmap(
+        cm, annot=True, cmap="coolwarm", xticklabels=label_condoer.classes_, yticklabels=label_condoer.classes_, fmt="d"
+    )
 
     plt.xlabel("Predicted")
     plt.ylabel("True")
@@ -38,12 +37,9 @@ def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, save_path: Path)
     plt.savefig(save_path)
 
 
-def plot_target_distribution(y: pd.Series, save_path: Path, dataset_name: str):
-    with open(path_config.target_le, "rb") as f:
-        le = joblib.load(f)
-
+def plot_target_distribution(y: pd.Series, save_path: Path, dataset_name: str, label_encoder: LabelEncoder):
     if any(isinstance(x, int) for x in y):
-        y = le.inverse_transform(y)
+        y = label_encoder.inverse_transform(y)
 
     plt.figure(figsize=(6, 4))
 

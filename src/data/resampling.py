@@ -12,7 +12,7 @@ class ResamplerFactory:
     }
 
     @classmethod
-    def get_resempler(cls, strategy_name: str, random_state: int | None = None):
+    def get_resampler(cls, strategy_name: str, random_state: int | None = None):
         strategy = strategy_name
 
         if strategy not in cls._registry:

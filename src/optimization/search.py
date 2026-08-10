@@ -11,12 +11,14 @@ import mlflow
 import pandas as pd
 from imblearn.pipeline import Pipeline as ImbPipeline
 from mlflow.models.signature import infer_signature
+from sklearn.preprocessing import LabelEncoder
 
 from configs.paths import DataPathConfig
 from configs.schemas_loader import load_preprocessing_config
 from configs.tuning_config import TuningConfigLoader
 from src.optimization.core import optimize_model
-from src.training.pipeline import load_training_data, train_and_evaluate_model
+from src.training.data import load_split_and_encode_dataset
+from src.training.train import fit_and_evaluate_model
 from src.utils.figures import (
     confusion_matrix_imag,
     corr_matrix,
@@ -153,7 +155,7 @@ def _train_final_model_step(
     # ------------------------------
 
     # Train the final model with the best hyperparameters and strategies
-    pipeline, test_scores = train_and_evaluate_model(
+    pipeline, test_scores = fit_and_evaluate_model(
         model_name=model_name,
         X_train=X_train,
         X_test=X_test,
@@ -192,6 +194,7 @@ def _generate_reports_step(
     y_train: pd.Series,
     y_test: pd.Series,
     path_config: DataPathConfig,
+    label_encoder: LabelEncoder,
 ) -> None:
     """
     Generate analytical reports and figures for the best model, including confusion matrix,
@@ -206,6 +209,7 @@ def _generate_reports_step(
         y_train=(y_train, pd.Series),
         y_test=(y_test, pd.Series),
         path_config=(path_config, DataPathConfig),
+        label_encoder=(label_encoder, LabelEncoder),
     )
 
     if len(X_train) != len(y_train):
@@ -225,17 +229,20 @@ def _generate_reports_step(
     confusion_matrix_imag(
         y_true=y_test,
         y_pred=pd.Series(test_predictions),
+        label_condoer=label_encoder,
         save_path=path_config.best_model / "confusion_matrix.png",
     )
     plot_target_distribution(
         y=y_train,
         save_path=path_config.best_model / "target_train_distribution.png",
         dataset_name="train",
+        label_encoder=label_encoder,
     )
     plot_target_distribution(
         y=y_test,
         save_path=path_config.best_model / "target_test_distribution.png",
         dataset_name="test",
+        label_encoder=label_encoder,
     )
     log_feature_importance(
         pipeline=model_pipeline,
@@ -273,6 +280,7 @@ def _log_experiment_result(
     path_config: DataPathConfig,
     run_log_file: Path,
     trials_log_file: Path,
+    le_target: LabelEncoder,
 ) -> None:
     """
     Log the results of the best model experiment to MLflow, including parameters,
@@ -336,7 +344,7 @@ def _log_experiment_result(
         mlflow.log_artifact(local_path=str(path_config.optuna_config), artifact_path="configs")
         mlflow.log_artifact(local_path=str(path_config.params_config), artifact_path="configs")
         mlflow.log_artifacts(local_dir=str(path_config.random_forest_search_space.parent), artifact_path="search_space")
-        mlflow.log_artifact(local_path=str(path_config.target_le), artifact_path="encoder")
+        # mlflow.log_artifact(local_path=str(path_config.target_le), artifact_path="encoder")
         mlflow.log_artifact(local_path=str(path_config.requirements_file), artifact_path="environment")
 
         # Log the run and trials log files as artifacts in MLflow if they exist
@@ -353,6 +361,10 @@ def _log_experiment_result(
             signature=signature,
             registered_model_name="Classification_Astro_Model",
             input_example=X_train.iloc[:3],
+        )
+        mlflow.log_dict(
+            {"classes": le_target.classes_.tolist()},
+            artifact_file="encoder/label_encoder.json",
         )
 
 
@@ -385,7 +397,9 @@ def run_optimization_pipeline() -> None:
     # ---------------------------------------------------------
     logger.info("1. Loading data and performing spatial split...")
     try:
-        X_train, X_test, y_train_encoded, y_test_encoded, groups_train, _, _ = load_training_data()
+        X_train, X_test, y_train_encoded, y_test_encoded, groups_train, _, label_encoder = (
+            load_split_and_encode_dataset()
+        )
     except Exception as e:
         logger.error("Error during data split: %s", e, exc_info=True)
         raise
@@ -406,9 +420,6 @@ def run_optimization_pipeline() -> None:
     # 4. TRAINING BEST MODEL
     # ---------------------------------------------------------
     logger.info("4. STARTING TRAINING %s WITH THE BEST HYPERPARAMETERS", best_model_name.upper())
-
-    print(X_train.isna().sum())
-    print(X_train.isnull().values.any())
 
     try:
         pipeline_best_model, score_best_model = _train_final_model_step(
@@ -431,7 +442,9 @@ def run_optimization_pipeline() -> None:
     # ---------------------------------------------------------
     logger.info("5. Generating Analytical Reports")
     try:
-        _generate_reports_step(pipeline_best_model, X_train, X_test, y_train_encoded, y_test_encoded, path_config)
+        _generate_reports_step(
+            pipeline_best_model, X_train, X_test, y_train_encoded, y_test_encoded, path_config, label_encoder
+        )
     except Exception as e:
         logger.error("Error during the generation of reports and figures: %s", e, exc_info=True)
 
@@ -461,6 +474,7 @@ def run_optimization_pipeline() -> None:
             path_config=path_config,
             run_log_file=run_log_file,
             trials_log_file=trials_log_file,
+            le_target=label_encoder,
         )
     except Exception as e:
         logger.error("Error during saving to MLflow: %s", e, exc_info=True)
