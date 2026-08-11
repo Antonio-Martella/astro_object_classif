@@ -2,6 +2,8 @@ data/*.csv
 data/*.json
 logs/*.log
 
+.DS_Store
+
 #saved_models/*.pkl
 __pycache__/
 .pytest_cache/
