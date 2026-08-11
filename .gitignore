@@ -9,6 +9,7 @@ __pycache__/
 .pytest_cache/
 mlruns/
 mlflow.db
+mlflow.db.backup
 *.log
 venv/
 .env
