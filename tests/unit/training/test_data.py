@@ -10,12 +10,23 @@ from src.training.data import load_split_and_encode_dataset
 
 
 class TestLoadSplitAndEncodeDataset:
-    def test_load_split_and_encode_typeerror(self):
+    @pytest.mark.parametrize(
+        "field_to_break, bad_value",
+        [
+            ("datapath_config", 123),
+            ("split_config", [1, 2, 3]),
+        ],
+    )
+    def test_load_split_and_encode_typeerror(self, field_to_break, bad_value):
         datapath_config = MagicMock(spec=DataPathConfig)
-        split_config = "unknown_type"
+        split_config = MagicMock(spec=SplitTrainingConfig)
 
-        with pytest.raises(TypeError, match="Parameter 'split_config'"):
-            load_split_and_encode_dataset(datapath_config, split_config)
+        kwargs = {"datapath_config": datapath_config, "split_config": split_config}
+
+        kwargs[field_to_break] = bad_value
+
+        with pytest.raises(TypeError):
+            load_split_and_encode_dataset(**kwargs)
 
     @patch("src.training.data.encode_targets_and_save")
     @patch("src.training.data.load_and_split_data")
