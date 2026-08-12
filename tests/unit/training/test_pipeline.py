@@ -11,8 +11,8 @@ from src.training.pipeline import build_training_pipeline
 def dummy_configuration():
     preprocess_config = MagicMock(spec=PreprocessingConfig)
     model_name = "random_forest"
-    scaler_strategy = "smote"
-    resampling_strategy = "class_weight"
+    scaler_strategy = "standard"
+    resampling_strategy = "smote"
     custom_params = {"n_estimators": 50}
 
     return preprocess_config, model_name, scaler_strategy, resampling_strategy, custom_params
