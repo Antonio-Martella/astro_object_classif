@@ -19,14 +19,30 @@ def dummy_configuration():
 
 
 class TestBuildTrainingPipeline:
-    def test_build_training_pipeline_typeerror(self, dummy_configuration):
-        _, model_name, scaler_strategy, resampling_strategy, custom_params = dummy_configuration
-        preprocess_config_err = "unknown_type"
+    @pytest.mark.parametrize(
+        "field_to_break, bad_value",
+        [
+            ("preprocess_config", 123),
+            ("model_name", {"n": 1}),
+            ("scaler_strategy", 456),
+            ("resampling_strategy", 123),
+            ("custom_params", [1, 2, 3]),
+        ],
+    )
+    def test_build_training_pipeline_typeerror(self, dummy_configuration, field_to_break, bad_value):
+        preprocess_config, model_name, scaler_strategy, resampling_strategy, custom_params = dummy_configuration
+        kwargs = {
+            "preprocess_config": preprocess_config,
+            "model_name": model_name,
+            "scaler_strategy": scaler_strategy,
+            "resampling_strategy": resampling_strategy,
+            "custom_params": custom_params,
+        }
+
+        kwargs[field_to_break] = bad_value
 
         with pytest.raises(TypeError):
-            build_training_pipeline(
-                preprocess_config_err, model_name, scaler_strategy, resampling_strategy, custom_params
-            )
+            build_training_pipeline(**kwargs)
 
     @patch("src.training.pipeline.load_preprocessing_config")
     @patch("src.training.pipeline.build_stateful_ml_pipeline")
