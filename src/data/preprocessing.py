@@ -12,12 +12,9 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 
-from configs import (
-    CleanPreprocessingConfig,
-    PreprocessingConfig,
-    load_cleaning_preprocessing_config,
-)
 from configs.paths import PROJECT_ROOT, DataPathConfig
+from configs.schemas import CleanPreprocessingConfig, PreprocessingConfig
+from configs.schemas_loader import load_cleaning_preprocessing_config
 from src.features.build_features import AstroFeatureEngineer
 
 logger = logging.getLogger(__name__)
@@ -276,9 +273,7 @@ def build_stateful_ml_pipeline(prep_config: PreprocessingConfig, scaler_strategy
     # Costruisco la pipeline del preprocessing
     pipeline = Pipeline(
         steps=[
-            # Riempio i NaN con la mediana
             ("imputer", SimpleImputer(strategy="median")),
-            # Scalimao i dati
             (
                 "scaler",
                 ColumnTransformer(
