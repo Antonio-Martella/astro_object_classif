@@ -37,10 +37,24 @@ def dummy_config():
 
 
 class TestFitAndEvaluateModel:
-    def test_fit_and_evaluate_raises_typeerror(self, dummy_config):
+    @pytest.mark.parametrize(
+        "field_to_break, bad_value",
+        [
+            ("model_name", 123),
+            ("X_train", "not_a_dataframe"),
+            ("X_test", 456),
+            ("y_train_encoded", "not_a_series"),
+            ("y_test_encoded", [1, 2, 3]),
+            ("preprocess_config", "not_a_config"),
+            ("custom_params", "not_a_dict"),
+            ("resampling_strategy", 42),
+            ("scaler_strategy", 3.14),
+        ],
+    )
+    def test_fit_and_evaluate_raises_typeerror_for_invalid_field_type(self, dummy_config, field_to_break, bad_value):
         (
             model_name,
-            _,
+            X_train,
             X_test,
             y_train_encoded,
             y_test_encoded,
@@ -50,20 +64,21 @@ class TestFitAndEvaluateModel:
             scaler_strategy,
         ) = dummy_config
 
-        X_train_err = "unknow_type"
+        kwargs = {
+            "model_name": model_name,
+            "X_train": X_train,
+            "X_test": X_test,
+            "y_train_encoded": y_train_encoded,
+            "y_test_encoded": y_test_encoded,
+            "preprocess_config": preprocess_config,
+            "custom_params": custom_params,
+            "resampling_strategy": resampling_strategy,
+            "scaler_strategy": scaler_strategy,
+        }
+        kwargs[field_to_break] = bad_value
 
         with pytest.raises(TypeError):
-            fit_and_evaluate_model(
-                model_name,
-                X_train_err,
-                X_test,
-                y_train_encoded,
-                y_test_encoded,
-                preprocess_config,
-                custom_params,
-                resampling_strategy,
-                scaler_strategy,
-            )
+            fit_and_evaluate_model(**kwargs)
 
     def test_fit_and_evaluate_train_dataset_length_error(self, dummy_config):
         (
@@ -159,7 +174,7 @@ class TestFitAndEvaluateModel:
     @patch("src.training.train.load_preprocessing_config")
     @patch("src.training.train.build_training_pipeline")
     @patch("src.training.train.evaluate_classification_metrics")
-    def test_fit_and_evaluate_empty_load_preprocces_config_when_none_provided(
+    def test_fit_and_evaluate_load_preprocces_config_when_none_provided(
         self,
         mock_evaluate_classification_metrics,
         mock_build_training_pipeline,
@@ -197,6 +212,53 @@ class TestFitAndEvaluateModel:
         )
 
         mock_load_preprocessing_config.assert_called_once_with()
+        mock_build_training_pipeline.assert_called_once_with(
+            mock_load_preprocessing_config.return_value,
+            model_name,
+            scaler_strategy,
+            resampling_strategy,
+            custom_params,
+        )
+
+    @patch("src.training.train.load_preprocessing_config")
+    @patch("src.training.train.build_training_pipeline")
+    @patch("src.training.train.evaluate_classification_metrics")
+    def test_fit_and_evaluate_load_preprocces_config_when_is_provided(
+        self,
+        mock_evaluate_classification_metrics,
+        mock_build_training_pipeline,
+        mock_load_preprocessing_config,
+        dummy_config,
+    ):
+        (
+            model_name,
+            X_train,
+            X_test,
+            y_train_encoded,
+            y_test_encoded,
+            preprocess_config,
+            custom_params,
+            resampling_strategy,
+            scaler_strategy,
+        ) = dummy_config
+
+        mock_load_preprocessing_config.return_value = MagicMock()
+        mock_build_training_pipeline.return_value = MagicMock()
+        mock_evaluate_classification_metrics.return_value = MagicMock()
+
+        fit_and_evaluate_model(
+            model_name,
+            X_train,
+            X_test,
+            y_train_encoded,
+            y_test_encoded,
+            preprocess_config,
+            custom_params,
+            resampling_strategy,
+            scaler_strategy,
+        )
+
+        mock_load_preprocessing_config.assert_not_called()
 
     @patch("src.training.train.build_training_pipeline")
     def test_fit_and_evaluate_pipeline_definition_error(self, mock_build_training_pipeline, dummy_config):
@@ -245,7 +307,7 @@ class TestFitAndEvaluateModel:
         ) = dummy_config
 
         mock_build_training_pipeline.return_value = MagicMock()
-        mock_evaluate_classification_metrics.side_effect = RuntimeError
+        mock_evaluate_classification_metrics.side_effect = RuntimeError()
 
         with pytest.raises(ValueError, match="Attention: Problem during EVALUATION of the trained model"):
             fit_and_evaluate_model(
@@ -277,7 +339,8 @@ class TestFitAndEvaluateModel:
             scaler_strategy,
         ) = dummy_config
 
-        mock_build_training_pipeline.return_value = MagicMock(spec=ImbPipeline)
+        pipeline_mock = MagicMock(spec=ImbPipeline)
+        mock_build_training_pipeline.return_value = pipeline_mock
         mock_evaluate_classification_metrics.return_value = MagicMock(spec=dict)
 
         pipeline, metrics = fit_and_evaluate_model(
@@ -294,3 +357,9 @@ class TestFitAndEvaluateModel:
 
         assert isinstance(pipeline, ImbPipeline)
         assert isinstance(metrics, dict)
+
+        mock_build_training_pipeline.assert_called_once_with(
+            preprocess_config, model_name, scaler_strategy, resampling_strategy, custom_params
+        )
+        pipeline_mock.fit.assert_called_once_with(X_train, y_train_encoded)
+        mock_evaluate_classification_metrics.assert_called_once_with(pipeline_mock, X_test, y_test_encoded)

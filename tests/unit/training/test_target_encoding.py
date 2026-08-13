@@ -14,12 +14,14 @@ def dummy_target_dataset():
 
 
 class TestEncodeTargetsAndSave:
-    def test_target_ecoding_typeerror(self, dummy_target_dataset):
+    @pytest.mark.parametrize("field_to_break, bad_value", [("y_train", "hello"), ("y_test", [1, 2, 3])])
+    def test_target_ecoding_typeerror(self, dummy_target_dataset, field_to_break, bad_value):
         y_train, y_test = dummy_target_dataset
-        y_test_err = pd.DataFrame(y_test)
+        kwargs = {"y_train": y_train, "y_test": y_test}
+        kwargs[field_to_break] = bad_value
 
         with pytest.raises(TypeError):
-            encode_targets_and_save(y_train, y_test_err)
+            encode_targets_and_save(**kwargs)
 
     def test_encodes_train_and_test_preserving_indices_and_mapping(self, dummy_target_dataset):
         y_train, y_test = dummy_target_dataset
@@ -79,6 +81,16 @@ class TestEncodeTargetsAndSave:
 
 
 class TestSaveTargetEncoder:
+    @pytest.mark.parametrize("field_to_break, bad_value", [("encoder", [1, 2, 3]), ("path", 1234)])
+    def test_save_ecoder_typeerror(self, tmp_path, field_to_break, bad_value):
+        path = tmp_path / "encoder.pkl"
+        encoder = LabelEncoder()
+        kwargs = {"encoder": encoder, "path": path}
+        kwargs[field_to_break] = bad_value
+
+        with pytest.raises(TypeError):
+            save_target_encoder(**kwargs)
+
     def test_saves_encoder_and_creates_nested_directories(self, tmp_path):
         nested_path = tmp_path / "nested" / "dir" / "encoder.pkl"
 
