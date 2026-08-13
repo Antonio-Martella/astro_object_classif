@@ -14,8 +14,9 @@ from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 
 from configs.paths import PROJECT_ROOT, DataPathConfig
 from configs.schemas import CleanPreprocessingConfig, PreprocessingConfig
-from configs.schemas_loader import load_cleaning_preprocessing_config
+from configs.schemas_loader import load_cleaning_preprocessing_config, load_preprocessing_config
 from src.features.build_features import AstroFeatureEngineer
+from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)
 
@@ -230,12 +231,12 @@ class ScalarFactory:
     @classmethod
     def get_scaler(cls, scaler_name: str):
         if scaler_name.lower() not in cls._registry.keys():
-            raise ValueError(f"Scaler '{scaler_name}' non supportato! " f"Scegli tra: {list(cls._registry.keys())}")
+            raise ValueError(f"Scaler '{scaler_name}' not Supported!" f"Choose between: {list(cls._registry.keys())}")
 
         return cls._registry[scaler_name]
 
 
-def build_stateful_ml_pipeline(prep_config: PreprocessingConfig, scaler_strategy: str) -> Pipeline:
+def build_stateful_ml_pipeline(prep_config: PreprocessingConfig | None, scaler_strategy: str) -> Pipeline:
     """
     Builds a full sklearn preprocessing pipeline for astronomical classification tasks.
 
@@ -267,10 +268,13 @@ def build_stateful_ml_pipeline(prep_config: PreprocessingConfig, scaler_strategy
 
     set_config(transform_output="pandas")
 
-    # Normalizzo se in configs/params.yaml è passato come true
+    validate_type(prep_config=(prep_config, (PreprocessingConfig, type(None))), scaler_strategy=(scaler_strategy, str))
+
+    if prep_config is None:
+        prep_config = load_preprocessing_config()
+
     scaler_step = ScalarFactory.get_scaler(scaler_name=scaler_strategy)
 
-    # Costruisco la pipeline del preprocessing
     pipeline = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -297,26 +301,17 @@ if __name__ == "__main__":
     mlflow.set_tracking_uri(f"sqlite:///{db_path}")
     mlflow.set_experiment("Astro_Object_Classification")
 
-    # carica i dati
     df = pd.read_csv(path_config.split_training_path)
 
-    # creo il dataset delle features
     X = df.drop(columns=["class"])
-    # creo il dataset del traget
     y = df["class"]
 
-    # inizializzo le classi di configurazione
     prep_config = load_cleaning_preprocessing_config()
 
-    # Creo la pipeline
     cleaning_pipeline = build_stateless_cleaning_pipeline(prep_config)
 
-    # Transformo il dataset X
     with mlflow.start_run(run_name="pipeline_preprocessing"):
-        # Fittiamo e trasformiamo i dati
         X_processed = cleaning_pipeline.fit_transform(X)
-
-        # Tracciamo tutti i parametri della pipeline su mlflow
         mlflow.log_params(
             {
                 "dropped_columns": prep_config.columns_to_drop,
@@ -324,15 +319,13 @@ if __name__ == "__main__":
             }
         )
 
-        # Salvo la pipeline, necessaria per il test, in mlflow
         mlflow.sklearn.log_model(sk_model=cleaning_pipeline, name="cleaning_pipeline")
 
-        # Salviamo anche una copia in locale
         models_path = path_config.cleaner_pipeline
         models_path.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(cleaning_pipeline, models_path)
 
-        logger.info(f"Copia locale della pipeline salvata in {models_path}.")
+        logger.info(f"Local copy of the pipeline saved in {models_path}.")
 
     saver = ProcessedDataSaver(path_config=path_config)
     saver.save(pd.concat([X_processed, y], axis=1))
