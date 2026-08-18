@@ -174,7 +174,7 @@ class TestFitAndEvaluateModel:
     @patch("src.training.train.load_preprocessing_config")
     @patch("src.training.train.build_training_pipeline")
     @patch("src.training.train.evaluate_classification_metrics")
-    def test_fit_and_evaluate_load_preprocces_config_when_none_provided(
+    def test_fit_and_evaluate_load_preprocess_config_when_none_provided(
         self,
         mock_evaluate_classification_metrics,
         mock_build_training_pipeline,
