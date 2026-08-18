@@ -21,7 +21,7 @@ def run_cross_validation(
     scaler_strategy: str = "standard",
     custom_params: dict[str, Any] | None = None,
     preprocessing_config: PreprocessingConfig | None = None,
-) -> dict[str, Any]:
+) -> dict[str, float]:
     """
     Performs robust cross-validation (Stratified Group K-Fold) to evaluate a model's performance.
 
@@ -42,7 +42,8 @@ def run_cross_validation(
     * *groups* (pd.Series): The feature used to group the data and avoid spatial/temporal leakage.
     * *n_splits* (int, optional): The number of folds into which to split the dataset. Defaults to 5.
     * *resampling_strategy* (str): Specifies the resemplifying strategy to apply to the training dataset.
-                                   The default is 'None', which implies 'classe_weight' = 'balanced' for all models.
+                                   The default is 'class_weight', which implies 'balanced' for all models.
+    * *scaler_strategy* (str): Specifies the scaling strategy to apply to dataset.
     * *custom_params* (dict, optional): Dictionary of custom hyperparameters (e.g., injected by Optuna).
                                         If None, the model will use the default parameters from the config file.
     * *preprocessing_config* (PreprocessingConfig, None): Preprocess configuration, necessary for the split train/test.
@@ -69,18 +70,28 @@ def run_cross_validation(
     if len(X) != len(y):
         raise ValueError("Please note that the lengths of the datasets (X and y) in the cross validation do not match!")
 
+    if y.nunique() < 2:
+        raise ValueError("y must contain at least 2 unique classes for stratified cross-validation.")
+
     if groups.empty:
-        raise ValueError("Warning: Group passed to empty cross-validation!")
+        raise ValueError("Group passed to empty cross-validation!")
 
     if len(groups) != len(X):
         raise ValueError("The length of 'groups' series does not match the dataset X length!")
+
+    if n_splits < 2:
+        raise ValueError(f"n_splits must be >= 2, got {n_splits}.")
 
     if groups.nunique() < n_splits:
         raise ValueError(f"Number of unique groups ({groups.nunique()}) must be >= n_splits ({n_splits}).")
 
     if preprocessing_config is None:
         preprocessing_config = load_preprocessing_config()
-    random_seed_config = load_random_seed_config()
+
+    try:
+        random_seed_config = load_random_seed_config()
+    except Exception as e:
+        raise ValueError(f"Attention: Could not load random_seeds to handle reproducibility. Error {e}.") from e
 
     try:
         sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=random_seed_config.random_seed_sgkf)
@@ -98,9 +109,13 @@ def run_cross_validation(
                 preprocessing_config, model_name, scaler_strategy, resampling_strategy, custom_params
             )
             pipeline.fit(X_fold_train, y_fold_train)
+        except Exception as e:
+            raise RuntimeError(f"Attention: the cross-validation PIPELINE failed on fold. Error {e}.") from e
+
+        try:
             fold_scores = evaluate_classification_metrics(pipeline, X_fold_val, y_fold_val)
         except Exception as e:
-            raise RuntimeError(f"Attention: the cross-validation pipeline has stopped. Error {e}.") from e
+            raise RuntimeError(f"Attention: the cross-validation EVALUATION failed on fold. Error {e}.") from e
 
         all_folds_metrics.append(fold_scores)
 
