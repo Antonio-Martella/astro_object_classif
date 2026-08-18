@@ -15,13 +15,20 @@ class TestLoadSplitAndEncodeDataset:
         [
             ("datapath_config", 123),
             ("split_config", [1, 2, 3]),
+            ("save_encoder", "not_a_bool"),
         ],
     )
     def test_load_split_and_encode_typeerror(self, field_to_break, bad_value):
         datapath_config = MagicMock(spec=DataPathConfig)
         split_config = MagicMock(spec=SplitTrainingConfig)
 
-        kwargs = {"datapath_config": datapath_config, "split_config": split_config}
+        save_encoder = False
+
+        kwargs = {
+            "datapath_config": datapath_config,
+            "split_config": split_config,
+            "save_encoder": save_encoder,
+        }
 
         kwargs[field_to_break] = bad_value
 
