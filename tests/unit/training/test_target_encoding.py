@@ -14,10 +14,23 @@ def dummy_target_dataset():
 
 
 class TestEncodeTargetsAndSave:
-    @pytest.mark.parametrize("field_to_break, bad_value", [("y_train", "hello"), ("y_test", [1, 2, 3])])
-    def test_target_ecoding_typeerror(self, dummy_target_dataset, field_to_break, bad_value):
+    @pytest.mark.parametrize(
+        "field_to_break, bad_value",
+        [
+            ("y_train", "hello"),
+            ("y_test", [1, 2, 3]),
+            ("save", "not_a_bool"),
+            ("path_encoder_save", 42),
+        ],
+    )
+    def test_target_ecoding_typeerror(self, tmp_path, dummy_target_dataset, field_to_break, bad_value):
         y_train, y_test = dummy_target_dataset
-        kwargs = {"y_train": y_train, "y_test": y_test}
+
+        save = True
+
+        path_encoder_save = tmp_path / "encoder.pkl"
+
+        kwargs = {"y_train": y_train, "y_test": y_test, "save": save, "path_encoder_save": path_encoder_save}
         kwargs[field_to_break] = bad_value
 
         with pytest.raises(TypeError):
