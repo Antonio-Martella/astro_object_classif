@@ -291,6 +291,43 @@ class TestRunCrossValidation:
 
         mock_load_preprocessing_config.assert_called_once_with()
 
+    @patch("src.training.cross_validation.load_preprocessing_config")
+    @patch("src.training.cross_validation.load_random_seed_config")
+    @patch("src.training.cross_validation.StratifiedGroupKFold")
+    @patch("src.training.cross_validation.build_training_pipeline")
+    @patch("src.training.cross_validation.evaluate_classification_metrics")
+    def test_run_cross_validation_load_preprocess_config_when_is_provided(
+        self,
+        mock_evaluate_classification_metrics,
+        mock_build_training_pipeline,
+        mock_StratifiedGroupKFold,
+        mock_load_random_seed_config,
+        mock_load_preprocessing_config,
+        dummy_cross_validation_config,
+    ):
+        model_name, X, y, groups, n_split, resampling_strategy, scaler_strategy, custom_params, preprocessing_config = (
+            dummy_cross_validation_config
+        )
+
+        mock_load_random_seed_config.return_value = MagicMock()
+        mock_StratifiedGroupKFold.return_value = MagicMock()
+        mock_build_training_pipeline.return_value = MagicMock()
+        mock_evaluate_classification_metrics.return_value = MagicMock()
+
+        run_cross_validation(
+            model_name,
+            X,
+            y,
+            groups,
+            n_split,
+            resampling_strategy,
+            scaler_strategy,
+            custom_params,
+            preprocessing_config,
+        )
+
+        mock_load_preprocessing_config.assert_not_called()
+
     @patch("src.training.cross_validation.load_random_seed_config")
     def test_run_cross_validation_load_randoseed_config_raise_error(
         self, mock_load_random_seed_config, dummy_cross_validation_config
