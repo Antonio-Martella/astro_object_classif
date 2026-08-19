@@ -8,14 +8,18 @@ PROJECT_ROOT = Path(__file__).parent.parent
 class DataPathConfig:
     # --- Dataset Originale ---
     raw_data_path: Path = PROJECT_ROOT / "data" / "raw" / "Star_Classification.csv"
+    raw_data_columns: Path = PROJECT_ROOT / "data" / "raw" / "Star_Classification_columns.json"
 
     # --- Dataset Splittati ---
     # Path dataset per training modelli
     split_training_path: Path = PROJECT_ROOT / "data" / "interim" / "training_dataset.csv"
     # Path dataset di simulazione di produzione
     split_production_path: Path = PROJECT_ROOT / "data" / "interim" / "holdout_dataset.csv"
-    #
+    # Path dei metadati per il dataset di simulazione
     split_metadata_path: Path = PROJECT_ROOT / "data" / "interim" / "metadata.json"
+
+    # Path dei metadati per il dataset di simulazione
+    holdout_dataset_predicted: Path = PROJECT_ROOT / "data" / "interim" / "holdout_dataset_pred.csv"
 
     # --- Dataset Processato ---
     processed_data_path: Path = PROJECT_ROOT / "data" / "processed" / "processed_data.csv"
