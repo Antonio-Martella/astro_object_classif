@@ -11,6 +11,7 @@ class KaggleConfig:
 
 @dataclass
 class SplitHoldoutConfig:
+    daily_split_batch_size: int
     holdout_split: float
     ref_col: str
 

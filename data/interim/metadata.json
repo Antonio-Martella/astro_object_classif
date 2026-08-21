@@ -9,5 +9,5 @@
     "split_method": "time_based_MJD",
     "raw_path": "/data/raw/Star_Classification.csv",
     "training_path": "/data/interim/training_dataset.csv",
-    "production_path": "/data/interim/holdout_dataset.csv"
+    "production_path": "/data/production/holdout_dataset.csv"
 }

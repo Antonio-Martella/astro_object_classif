@@ -13,13 +13,26 @@ class DataPathConfig:
     # --- Dataset Splittati ---
     # Path dataset per training modelli
     split_training_path: Path = PROJECT_ROOT / "data" / "interim" / "training_dataset.csv"
-    # Path dataset di simulazione di produzione
-    split_production_path: Path = PROJECT_ROOT / "data" / "interim" / "holdout_dataset.csv"
     # Path dei metadati per il dataset di simulazione
     split_metadata_path: Path = PROJECT_ROOT / "data" / "interim" / "metadata.json"
+    # Path dataset di simulazione di produzione
+    split_production_path: Path = PROJECT_ROOT / "data" / "production" / "holdout_dataset.csv"
+    # Path subdirectory di salvataggio batch giornalieri
+    split_production_batch_path: Path = PROJECT_ROOT / "data" / "production" / "daily_batch"
 
     # Path dei metadati per il dataset di simulazione
-    holdout_dataset_predicted: Path = PROJECT_ROOT / "data" / "interim" / "holdout_dataset_pred.csv"
+    holdout_dataset_full_predicted: Path = (
+        PROJECT_ROOT / "data" / "interim" / "holdout_full_predict" / "holdout_pred_full.csv"
+    )
+    holdout_dataset_full_metrics: Path = (
+        PROJECT_ROOT / "data" / "interim" / "holdout_full_predict" / "full_metrics.json"
+    )
+    holdout_dataset_batch_predicted: Path = (
+        PROJECT_ROOT / "data" / "interim" / "holdout_batch_predict" / "holdout_pred_batch.csv"
+    )
+    holdout_dataset_batch_metrics: Path = (
+        PROJECT_ROOT / "data" / "interim" / "holdout_batch_predict" / "batch_metrics.json"
+    )
 
     # --- Dataset Processato ---
     processed_data_path: Path = PROJECT_ROOT / "data" / "processed" / "processed_data.csv"
@@ -68,3 +81,8 @@ class DataPathConfig:
 
     # --- requirements ---
     requirements_file: Path = PROJECT_ROOT / "requirements.txt"
+
+    # --- Monitoring & Drift Reports ---
+    monitoring_reports_dir: Path = PROJECT_ROOT / "reports" / "monitoring"
+    drift_report_full: Path = PROJECT_ROOT / "reports" / "monitoring" / "drift_report_full.json"
+    drift_report_batches: Path = PROJECT_ROOT / "reports" / "monitoring" / "drift_report_batches.json"

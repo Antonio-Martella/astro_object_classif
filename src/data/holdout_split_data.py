@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 
 import mlflow
 import pandas as pd
@@ -94,6 +95,15 @@ class SplitProductionSimulation:
 
         self._save(df_train, df_prod, metadata)
 
+        print(type(self.splitter.splitdata_config))
+        print(self.splitter.splitdata_config)
+        print(self.splitter.splitdata_config.daily_split_batch_size)
+
+        self._save_daily_batches(
+            df_prod,
+            self.splitter.splitdata_config.daily_split_batch_size,
+        )
+
         return df_train
 
     def _load_dataset(self) -> pd.DataFrame:
@@ -124,6 +134,7 @@ class SplitProductionSimulation:
         metadata_path = self.datapath_config.split_metadata_path
 
         train_path.parent.mkdir(parents=True, exist_ok=True)
+        prod_path.parent.mkdir(parents=True, exist_ok=True)
 
         df_train.to_csv(train_path, index=False)
         df_prod.to_csv(prod_path, index=False)
@@ -140,6 +151,19 @@ class SplitProductionSimulation:
 
         logger.info(f"Training dataset saved in: {display_train_path}")
         logger.info(f"Production dataset saved in: {display_prod_path}")
+
+    def _save_daily_batches(self, df_prod: pd.DataFrame, batch_size: int = 2000) -> None:
+        validate_type(
+            df_prod=(df_prod, pd.DataFrame),
+            batch_size=(batch_size, int),
+        )
+        count_day = 0
+        self.datapath_config.split_production_batch_path.mkdir(parents=True, exist_ok=True)
+        while len(df_prod) > count_day * batch_size:
+            batch_day = df_prod.iloc[count_day * batch_size : (count_day + 1) * batch_size]
+            daily_path = Path(self.datapath_config.split_production_batch_path) / f"day_{str(count_day + 1)}.csv"
+            batch_day.to_csv(daily_path)
+            count_day += 1
 
 
 if __name__ == "__main__":

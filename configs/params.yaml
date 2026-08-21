@@ -26,6 +26,7 @@ kaggle:
 
 # --- Split del dataset in holdout (simulazione di produzione) e dataset per training modelli ---
 split_dataset_holdout:
+  daily_split_batch_size: 2000
   holdout_split: 0.2
   ref_col: "MJD"
 
