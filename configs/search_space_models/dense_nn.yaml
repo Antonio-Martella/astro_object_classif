@@ -1,0 +1,156 @@
+# =============================================================================
+# DENSE NEURAL NETWORK HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: dense_nn
+
+search_space:
+  # Number of fully connected hidden layers in the funnel architecture
+  # Deeper networks capture complex hierarchical interactions but increase risk of vanishing gradients and latency
+  dense_nn_num_layer:
+    type: int
+    low: 2
+    high: 5
+
+  # Number of hidden units in the first dense layer (halved across successive layers)
+  # Determines initial representational capacity; larger sizes increase expressiveness and memory footprint
+  dense_nn_num_perceptron:
+    type: categorical
+    choices: [32, 64, 128, 256]
+
+  # Dropout probability applied after each hidden layer to randomly deactivate activations
+  # Acts as a strong regularizer against feature co-adaptation; higher values combat overfitting
+  dense_nn_drop_out:
+    type: float
+    low: 0.0
+    high: 0.5
+    log: false
+
+  # Whether to apply Batch Normalization layers immediately prior to activation functions
+  # Stabilizes hidden layer distribution shifts, smoothing the loss landscape and speeding convergence
+  dense_nn_batch_norm:
+    type: categorical
+    choices: [true, false]
+
+  # Non-linear activation function evaluated across all intermediate hidden layers
+  # 'relu' avoids saturation, 'leaky_relu' mitigates dead neurons, 'tanh' bounds outputs between -1 and 1
+  dense_nn_hidden_act_func:
+    type: categorical
+    choices: ["relu", "leaky_relu", "tanh"]
+
+  # Initial gradient descent step size sampled on a logarithmic scale
+  # Lower rates ensure stable convergence; higher rates accelerate training but risk divergence or oscillation
+  dense_nn_learning_rate:
+    type: float
+    low: 0.0005
+    high: 0.05
+    log: true
+
+  # Number of training instances propagated through the network per gradient update step
+  # Larger batches maximize hardware vectorization efficiency; smaller batches provide regularization noise
+  dense_nn_batch_size:
+    type: categorical
+    choices: [256, 512, 1024]
+
+  # First-order gradient optimization algorithm used to update network weights
+  # 'adam'/'adamw' adapt per-parameter learning rates, 'rmsprop' tracks non-stationary objectives, 'sgd' provides classical momentum
+  dense_nn_optimizer:
+    type: categorical
+    choices: ["adam", "adamw", "rmsprop", "sgd"]
+
+  # Decoupled L2 weight regularization coefficient applied in AdamW, RMSProp, and SGD
+  # Penalizes large weight magnitudes to constrain model capacity and mitigate overfitting
+  dense_nn_weight_decay:
+    type: float
+    low: 0.000001
+    high: 0.1
+    log: true
+
+  # Exponential decay rate for first moment (running average of gradients) in Adam and AdamW
+  # Controls momentum inertia; higher values smooth out high-variance directional updates
+  dense_nn_beta_1:
+    type: float
+    low: 0.85
+    high: 0.99
+    log: false
+
+  # Exponential decay rate for second moment (running average of squared gradients) in Adam and AdamW
+  # Controls variance scaling; values close to 1.0 stabilize learning rates across sparse or noisy gradients
+  dense_nn_beta_2:
+    type: float
+    low: 0.98
+    high: 0.9999
+    log: false
+
+  # Exponential decay factor over historical squared gradients used by RMSProp
+  # Controls how rapidly past gradient magnitudes are discounted when adapting learning rates
+  dense_nn_rho:
+    type: float
+    low: 0.80
+    high: 0.99
+    log: false
+
+  # Directional acceleration factor applied to RMSProp parameter updates
+  # Adds velocity along persistent gradient directions to overcome local minima and saddle points
+  dense_nn_momentum_rmsprop:
+    type: float
+    low: 0.0
+    high: 0.90
+    log: false
+
+  # Classical momentum acceleration coefficient used by SGD
+  # Accelerates convergence along directions of consistent gradient while dampening high-frequency oscillations
+  dense_nn_momentum_sgd:
+    type: float
+    low: 0.50
+    high: 0.99
+    log: false
+
+  # Whether to utilize Nesterov Accelerated Gradient (look-ahead momentum) in SGD
+  # Evaluates gradients at projected future positions to improve stability and avoid overshooting minima
+  dense_nn_nesterov:
+    type: categorical
+    choices: [true, false]
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Target validation metric monitored by learning rate decay and early stopping callbacks
+  dense_nn_metric_monitor_callback:
+    type: fixed
+    value: "val_loss"
+
+  # Multiplicative decay factor applied to learning rate upon plateau detection (new_lr = lr * factor)
+  dense_nn_factor_reducer_callback:
+    type: fixed
+    value: 0.75
+
+  # Number of validation check epochs with no improvement before decaying learning rate
+  dense_nn_patience_lrreducer:
+    type: fixed
+    value: 2
+
+  # Number of validation check epochs with no improvement before stopping training and restoring best weights
+  dense_nn_patience_earlystop:
+    type: fixed
+    value: 3
+
+  # Verbosity level of training callbacks (0 = silent execution)
+  dense_nn_verbose_cb:
+    type: fixed
+    value: 0
+
+  # Output layer activation function producing normalized class probabilities across 3 target classes
+  dense_nn_act_func:
+    type: fixed
+    value: "softmax"
+
+  # Automatically weight cross-entropy loss inversely proportional to target class frequencies
+  dense_nn_class_weights:
+    type: fixed
+    value: true
+
+  # Keras training loop verbosity level (0 = silent execution for clean Optuna logs)
+  dense_nn_verbose:
+    type: fixed
+    value: 0

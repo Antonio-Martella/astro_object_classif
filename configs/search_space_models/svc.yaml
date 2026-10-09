@@ -1,0 +1,81 @@
+# =============================================================================
+# SUPPORT VECTOR CLASSIFIER HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: svc
+
+search_space:
+  # Regularization parameter inversely proportional to slack variable penalty strength
+  # Smaller values enforce wider margins (simpler boundary); larger values penalize misclassifications heavily
+  svc_C:
+    type: float
+    low: 0.001
+    high: 100.0
+    log: true
+
+  # Multi-class strategy formulation ('ovr' for one-vs-rest, 'ovo' for one-vs-one pairwise)
+  # 'ovr' fits 3 binary classifiers; 'ovo' fits pairwise combinations which can be faster on non-linear kernels
+  svc_decision_function_shape:
+    type: categorical
+    choices: ["ovr", "ovo"]
+
+  # Kernel transformation function projecting input space into higher-dimensional feature space
+  # 'linear' constructs flat hyperplanes; 'rbf' maps observations into infinite-dimensional radial spaces
+  svc_kernel:
+    type: categorical
+    choices: ["linear", "rbf"]
+
+  # Kernel coefficient defining the radius of influence of individual support vectors (RBF kernel)
+  # Lower values produce smoother decision boundaries; higher values create tight, localized decision regions
+  svc_gamma:
+    type: float
+    low: 0.0001
+    high: 10.0
+    log: true
+
+  # Degree of the polynomial kernel function (evaluated if poly kernel is selected)
+  # Higher degrees increase boundary flexibility but amplify sensitivity to outliers and computational load
+  svc_degree:
+    type: int
+    low: 2
+    high: 4
+
+  # Independent bias term adjusting how high-degree vs low-degree polynomial terms influence the kernel
+  # Shifts origin in kernel space to balance linear versus non-linear curvature contributions
+  svc_coef0:
+    type: float
+    low: -10.0
+    high: 10.0
+    log: false
+
+  # Whether to use LIBSVM shrinking heuristics to identify and freeze unpromising support vectors
+  # Setting to true speeds up optimization; setting to false forces full gradient evaluation across all vectors
+  svc_shrinking:
+    type: categorical
+    choices: [true, false]
+
+  # Tolerance threshold for the Karush-Kuhn-Tucker (KKT) optimality stopping criterion
+  # Lower values enforce stricter numerical convergence at the expense of solver execution time
+  svc_tol:
+    type: float
+    low: 0.0001
+    high: 0.01
+    log: true
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Enables Platt scaling probability calibration required for multi-class log-loss and ROC-AUC
+  svc_probability:
+    type: fixed
+    value: true
+
+  # Automatically adjust weights inversely proportional to target class frequencies
+  svc_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Hard upper limit on solver iterations to prevent indefinite quadratic solver hangs
+  svc_max_iter:
+    type: fixed
+    value: 2500

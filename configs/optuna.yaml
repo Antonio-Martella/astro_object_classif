@@ -1,42 +1,47 @@
+# =============================================================================
+# OPTUNA HYPERPARAMETER OPTIMIZATION CONFIGURATION
+# =============================================================================
+
+# 1. MLflow Tracking Context
 experiment:
-  # Experiment Name
   name_experiment: "Astro_Object_Classification"
-  
-  # Available models that Optuna can choose from at each test
-  model_name: 
+
+# 2. Optuna Study & Sampler Settings (TPESampler)
+study:
+  study_name: "opt_astro"
+  metric_to_optimize: "f1_weighted"
+  direction: "maximize"
+  n_trials: 500
+  n_startup_trials: 300
+  multivariate: True
+
+# 3. Model Evaluation Protocol
+cross_validation:
+  n_folds_cv: 3
+
+# 4. Global Search Space Definition
+search_space:
+  candidate_models:
     - "dense_nn"
     - "random_forest"
     - "xgboost"
     - "lightgbm"
     - "catboost"
+    - "extra_trees"
     - "svc"
     - "sgd"
     - "logreg"
 
-  # Number of trials for Optuna optimization
-  n_trials: 1
-
-  # Number of initial random trials before Optuna starts using its optimization strategies
-  n_startup_trials: 100
-
-  # Metric to optimize during the hyperparameter tuning process
-  metric_to_optimize: "f1"
-
-  # Whether to use a multivariate approach in the Optuna optimization process
-  multivariate: True
-
-  # Direction of optimization for the specified metric
-  direction: "maximize"
-
-  # Number of folds for cross-validation during the hyperparameter tuning process
-  n_folds_cv: 3
-
-  # Resampling strategy to handle class imbalance in the dataset
   resampling_strategy:
-    type: categorical
-    choices: ["class_weight", "smote", "undersampling"]
-    
-  # Scaler strategy to normalize or standardize the features in the dataset
+    type: "categorical"
+    choices: 
+      - "class_weight"
+      - "smote"
+      - "undersampling"
+
   scaler_strategy:
-    type: categorical
-    choices: ["standard", "robust", "minmax"]
+    type: "categorical"
+    choices: 
+      - "standard"
+      - "robust"
+      - "minmax"

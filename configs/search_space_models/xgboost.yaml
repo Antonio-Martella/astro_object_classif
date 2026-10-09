@@ -1,0 +1,85 @@
+# =============================================================================
+# XGBOOST CLASSIFIER HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: xgboost
+
+search_space:
+  # Number of sequential gradient boosted decision trees fit during training
+  # Higher values expand model capacity but increase computational cost and risk of overfitting
+  xgboost_n_estimators:
+    type: int
+    low: 50
+    high: 800
+
+  # Step size shrinkage factor used in update to prevent overfitting
+  # Lower values require higher n_estimators but achieve smoother convergence and better generalization
+  xgboost_learning_rate:
+    type: float
+    low: 0.001
+    high: 0.3
+    log: true
+
+  # Maximum depth allowed for any individual tree in the ensemble
+  # Deeper trees capture complex higher-order interactions but exponentially increase memory and overfitting
+  xgboost_max_depth:
+    type: int
+    low: 1
+    high: 20
+
+  # Minimum sum of instance weight (hessian) required in a child node
+  # Acts as a leaf partition regularizer; higher values prevent isolating small or noisy sample sets
+  xgboost_min_child_weight:
+    type: int
+    low: 1
+    high: 5
+
+  # Subsample ratio of the training instances evaluated prior to growing trees
+  # Subsampling introduces stochastic gradient boosting, preventing tree correlation and reducing overfitting
+  xgboost_subsample:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+
+  # Subsample ratio of columns evaluated when constructing each individual tree
+  # Column subsampling reduces reliance on dominant features and provides bagging variance reduction
+  xgboost_colsample_bytree:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+
+  # L1 regularization term on leaf weights (equivalent to Lasso penalty)
+  # Encourages sparsity in leaf weights by driving non-informative feature weights strictly to zero
+  xgboost_reg_alpha:
+    type: float
+    low: 0.001
+    high: 10.0
+    log: true
+
+  # L2 regularization term on leaf weights (equivalent to Ridge penalty)
+  # Penalizes large leaf weights to smooth prediction updates and stabilize learning on noisy observations
+  xgboost_reg_lambda:
+    type: float
+    low: 0.001
+    high: 10.0
+    log: true
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Multi-class classification objective returning predicted probabilities per class
+  xgboost_objective:
+    type: fixed
+    value: "multi:softprob"
+
+  # Silence verbose training logs and warning outputs during Optuna trials (0 = silent)
+  xgboost_verbosity:
+    type: fixed
+    value: 0
+
+  # Utilize all available CPU threads for parallel tree construction
+  xgboost_n_jobs:
+    type: fixed
+    value: -1

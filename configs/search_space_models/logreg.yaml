@@ -1,0 +1,57 @@
+# =============================================================================
+# LOGISTIC REGRESSION HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: logreg
+
+search_space:
+  # Inverse of regularization strength (smaller values specify stronger regularization)
+  # High C fits closer to training data; low C shrinks coefficients toward zero to mitigate overfitting
+  logreg_C:
+    type: float
+    low: 0.001
+    high: 100.0
+    log: true
+
+  # ElasticNet mixing parameter balancing L1 (Lasso) and L2 (Ridge) penalties
+  # 0.0 yields pure L2 weight shrinkage; 1.0 yields pure L1 feature sparsity; intermediate values balance both
+  logreg_l1_ratio:
+    type: float
+    low: 0.0
+    high: 1.0
+    log: false
+
+  # Maximum number of solver iterations allowed to reach numerical convergence
+  # Higher limits ensure full convergence on correlated features, at the cost of training duration
+  logreg_max_iter:
+    type: int
+    low: 1000
+    high: 5000
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Stochastic Average Gradient descent (SAGA) solver supporting non-smooth ElasticNet penalties
+  logreg_solver:
+    type: fixed
+    value: "saga"
+
+  # ElasticNet regularization combining L1 sparsity and L2 coefficient shrinking
+  logreg_penalty:
+    type: fixed
+    value: "elasticnet"
+
+  # Automatically adjust weights inversely proportional to target class frequencies
+  logreg_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Silence verbose training logs during Optuna trials
+  logreg_verbose:
+    type: fixed
+    value: 0
+
+  # Utilize all available CPU threads for parallel multi-class one-vs-rest convergence
+  logreg_n_jobs:
+    type: fixed
+    value: -1

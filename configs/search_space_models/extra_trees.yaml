@@ -1,0 +1,70 @@
+# =============================================================================
+# EXTRA TREES CLASSIFIER HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: extra_trees
+
+search_space:
+  # Number of extremely randomized trees built in the ensemble
+  # Higher values improve variance reduction and stability at the expense of training time
+  extra_trees_n_estimators:
+    type: int
+    low: 50
+    high: 500
+
+  # Maximum depth allowed for individual decision trees
+  # Controls tree complexity; lower values prevent fitting sample-specific noise
+  extra_trees_max_depth:
+    type: int
+    low: 1
+    high: 30
+
+  # Minimum number of samples required to split an internal node
+  # Higher values constrain tree growth and prevent creating overly granular leaves
+  extra_trees_min_samples_split:
+    type: int
+    low: 2
+    high: 20
+
+  # Minimum number of samples required to reside in any terminal leaf node
+  # Higher values regularize leaf predictions by enforcing sufficient statistical support
+  extra_trees_min_samples_leaf:
+    type: int
+    low: 1
+    high: 10
+
+  # Number of random features evaluated at each split candidate ('sqrt', 'log2', or null)
+  # Subsampling features decorrelates individual trees; null evaluates all features
+  extra_trees_max_features:
+    type: categorical
+    choices: ["sqrt", "log2", null]
+
+  # Impurity metric used to rank randomly selected split thresholds
+  # 'gini' optimizes variance of class distributions; 'entropy' maximizes information gain
+  extra_trees_criterion:
+    type: categorical
+    choices: ["gini", "entropy"]
+
+  # Whether whole dataset or random bootstrap subsamples are used to construct trees
+  # False uses entire dataset with random splits; True introduces additional bagging variance reduction
+  extra_trees_bootstrap:
+    type: categorical
+    choices: [True, False]
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Automatically adjust weights inversely proportional to target class frequencies
+  extra_trees_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Silence verbose training logs during Optuna trials
+  extra_trees_verbose:
+    type: fixed
+    value: 0
+
+  # Utilize all available CPU threads for parallel training
+  extra_trees_n_jobs:
+    type: fixed
+    value: -1

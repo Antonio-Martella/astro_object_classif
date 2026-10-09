@@ -1,0 +1,38 @@
+# =============================================================================
+# PREPROCESSING & FEATURE ENGINEERING CONFIGURATION
+# =============================================================================
+
+# 1. Data Cleaning & Astrophysical Feature Engineering
+cleaning_preprocessing:
+  # Instrumental anomaly / missing sentinel values in SDSS bands (converted to NaN)
+  anomaly_values:
+    - -9999
+
+  # Filter band pairs used to generate astrophysical color indices (e.g. u-g = u - g)
+  new_features:
+    - ["u", "g"]
+    - ["g", "r"]
+    - ["r", "i"]
+    - ["i", "z"]
+
+  # Feature selection: predictive columns retained for model training
+  # (Drops telescope/camera metadata like obj_ID, run_ID, cam_col, fiber_ID, MJD)
+  columns_to_hold:
+    - "u-g"
+    - "g-r"
+    - "r"
+    - "r-i"
+    - "i-z"
+    - "redshift"
+
+
+# 2. Feature Normalization & Scaling
+preprocessing:
+  # Continuous numerical columns to normalize via selected scaler strategy
+  columns_to_scale:
+    - "r"
+    - "redshift"
+    - "u-g"
+    - "g-r"
+    - "r-i"
+    - "i-z"

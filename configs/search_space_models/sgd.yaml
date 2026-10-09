@@ -1,0 +1,76 @@
+# =============================================================================
+# STOCHASTIC GRADIENT DESCENT (SGD) HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: sgd
+
+search_space:
+  # Loss function to be optimized ('log_loss' for logistic regression, 'modified_huber' for outlier robustness)
+  # Both losses provide calibrated class probabilities essential for multi-class log-loss and ROC-AUC
+  sgd_loss:
+    type: categorical
+    choices: ["log_loss", "modified_huber"]
+
+  # Regularization penalty norm applied to model coefficients
+  # 'l2' shrinks weights, 'l1' induces feature sparsity, 'elasticnet' linearly combines both penalties
+  sgd_penalty:
+    type: categorical
+    choices: ["l2", "l1", "elasticnet"]
+
+  # Constant multiplier that scales regularization strength (analogous to 1/C)
+  # Higher values enforce stronger shrinkage and prevent overfitting; lower values fit training data more aggressively
+  sgd_alpha:
+    type: float
+    low: 0.000001
+    high: 0.1
+    log: true
+
+  # ElasticNet mixing parameter (active when penalty is set to 'elasticnet')
+  # Balances L1 feature selection versus L2 coefficient shrinkage (0.0 = pure L2, 1.0 = pure L1)
+  sgd_l1_ratio:
+    type: float
+    low: 0.0
+    high: 1.0
+    log: false
+
+  # Learning rate schedule governing gradient descent step size adaptation
+  # 'optimal' dynamically scales by alpha; 'adaptive' decays on plateau; 'invscaling' decays over epochs
+  sgd_learning_rate:
+    type: categorical
+    choices: ["optimal", "adaptive", "invscaling"]
+
+  # Initial step size for 'adaptive' and 'invscaling' learning rate schedules
+  # Governs initial progress along gradient directions; automatically ignored when using 'optimal' schedule
+  sgd_eta0:
+    type: float
+    low: 0.0001
+    high: 0.1
+    log: true
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Terminates training when validation score plateaus, restoring the best parameter weights
+  sgd_early_stopping:
+    type: fixed
+    value: true
+
+  # Maximum number of passes over the training dataset (epochs)
+  sgd_max_iter:
+    type: fixed
+    value: 5000
+
+  # Automatically adjust weights inversely proportional to target class frequencies
+  sgd_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Silence verbose training logs during Optuna trials
+  sgd_verbose:
+    type: fixed
+    value: 0
+
+  # Utilize all available CPU threads for parallel multi-class one-vs-rest training
+  sgd_n_jobs:
+    type: fixed
+    value: -1
