@@ -25,7 +25,7 @@ from configs.pipeline_loader import (
 
 __all__ = [
     "DataPathConfig",
-    "PROJECT_ROOT"
+    "PROJECT_ROOT",
 
     "OptunaConfigLoader",
 
