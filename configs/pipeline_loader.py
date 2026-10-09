@@ -16,9 +16,6 @@ from configs.pipeline_config import (
 )
 from src.utils.validate_type import validate_type
 
-# Central path resolver for all configuration file locations
-path_config = DataPathConfig()
-
 
 def _read_yaml(file_yaml_path: Path) -> dict[str, Any]:
     """
