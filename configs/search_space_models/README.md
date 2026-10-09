@@ -68,13 +68,9 @@ extra_trees_class_weight:
 
 ## Namespace Isolation & Naming Convention
 
-All optimizable and fixed parameters **must strictly follow the prefixed naming convention**:
+All optimizable and fixed parameters **must strictly follow the prefixed naming convention**.
 
-All optimizable and fixed parameters **must strictly follow the prefixed naming convention**:
-
-$$
-\text{Parameter Key} = \texttt{model\_name\_param\_name}
-$$
+**Parameter key:** `model_name_param_name`
 
 ### Why this is mandatory:
 1. **Multi-Model Studies:** During a single global Optuna study (e.g. 500 trials), Optuna samples `model_name` from `candidate_models` and persists all sampled parameters into a single global study database (`sqlite:///` or memory).
