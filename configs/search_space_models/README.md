@@ -70,7 +70,11 @@ extra_trees_class_weight:
 
 All optimizable and fixed parameters **must strictly follow the prefixed naming convention**:
 
-$$\text{Parameter Key} = \text{\{model\_name\}}\_\text{\{param\_name\}}$$
+All optimizable and fixed parameters **must strictly follow the prefixed naming convention**:
+
+$$
+\text{Parameter Key} = \texttt{model\_name\_param\_name}
+$$
 
 ### Why this is mandatory:
 1. **Multi-Model Studies:** During a single global Optuna study (e.g. 500 trials), Optuna samples `model_name` from `candidate_models` and persists all sampled parameters into a single global study database (`sqlite:///` or memory).
