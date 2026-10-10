@@ -1,5 +1,6 @@
-data/*.csv
-data/*.json
+data/**/*.csv
+data/**/*.json
+
 logs/*.log
 
 .DS_Store
