@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from configs.paths import DataPathConfig
-from configs.schemas import KaggleConfig
+from configs.pipeline_config import KaggleConfig
 from src.data.make_datasets import run_ingestion
 
 

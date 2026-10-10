@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from configs import CleanPreprocessingConfig
+from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +56,19 @@ class AstroFeatureEngineer(BaseEstimator, TransformerMixin):
         Input dataframe enriched with four additional color-index features.
     """
 
-    def __init__(self, clean_prepr_config: CleanPreprocessingConfig):
+    def __init__(self, clean_prepr_config: CleanPreprocessingConfig, verbose: bool = True) -> None:
+        validate_type(
+            clean_prepr_config=(clean_prepr_config, CleanPreprocessingConfig),
+            verbose=(verbose, bool),
+        )
         self.clean_prepr_config = clean_prepr_config
+        self.verbose = verbose
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y = None):
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, type(None))
+        )
         self.is_fitted_ = True
         return self
 
@@ -66,6 +76,10 @@ class AstroFeatureEngineer(BaseEstimator, TransformerMixin):
         return True
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, (pd.Series, type(None)))
+        )
         X_copy = X.copy()
 
         required_cols = list(set([col for pair in self.clean_prepr_config.new_features for col in pair]))
@@ -80,8 +94,10 @@ class AstroFeatureEngineer(BaseEstimator, TransformerMixin):
         for _, col in enumerate(self.clean_prepr_config.new_features):
             X_copy[f"{col[0]}-{col[1]}"] = X_copy[col[0]] - X_copy[col[1]]
 
-        logger.info(
-            "Feature engineering completed successfully. New color-index features ['u-g', 'g-r', 'r-i', 'i-z'] "
-            "have been added to the dataset."
-        )
+        if self.verbose:
+            logger.info(
+                "Feature engineering completed successfully. New color-index features ['u-g', 'g-r', 'r-i', 'i-z'] "
+                "have been added to the dataset."
+            )
+            
         return X_copy

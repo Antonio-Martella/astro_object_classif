@@ -31,12 +31,6 @@ class DataPathConfig:
     interim_dir: Path = DATA_DIR / "interim"
     split_training_path: Path = interim_dir / "training_dataset.csv"
     split_interim_metadata_path: Path = interim_dir / "interim_dataset_metadata.json"
-    holdout_dataset_batch_predicted: Path = (
-        interim_dir / "holdout_batch_predict" / "holdout_pred_batch.csv"
-    )
-    holdout_dataset_batch_metrics: Path = (
-        interim_dir / "holdout_batch_predict" / "batch_metrics.json"
-    )
 
     # --- 1.3 Production Data (Daily batches & holdout simulation) ---
     production_dir: Path = DATA_DIR / "production"
@@ -44,9 +38,9 @@ class DataPathConfig:
     split_production_metadata_path: Path = production_dir / "holdout_dataset_metadata.json"
 
     # Daily batches for monitoring & streaming inference
-    split_daily_batch_path: Path = production_dir / "daily_batch"
-    split_daily_batch_metadata_path: Path = (
-        split_daily_batch_path / "daily_batch_metadata.json"
+    split_daily_batches_path: Path = production_dir / "daily_batches"
+    split_daily_batches_metadata_path: Path = (
+        split_daily_batches_path / "daily_batches_metadata.json"
     )
 
     # Archived daily batches after retraining triggers
@@ -56,11 +50,11 @@ class DataPathConfig:
     )
 
     # Holdout batch full predictions & evaluation metrics
-    holdout_dataset_full_predicted: Path = (
-        production_dir / "predictions" / "holdout_pred_full.csv"
+    holdout_dataset_predicted: Path = (
+        production_dir / "predictions" / "holdout_pred.csv"
     )
-    holdout_dataset_full_metrics: Path = (
-        production_dir / "predictions" / "full_metrics.json"
+    holdout_dataset_metrics: Path = (
+        production_dir / "predictions" / "holdout_pred_metrics.json"
     )
 
     # --- 1.4 Processed Data (Cleaned and preprocessed for training) ---

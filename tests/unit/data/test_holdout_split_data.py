@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from configs.paths import DataPathConfig
-from configs.schemas import SplitHoldoutConfig
+from configs.pipeline_config import SplitHoldoutConfig
 from src.data.holdout_split_data import SplitProductionSimulation, TimeBasedSplitter
 
 
@@ -424,3 +424,7 @@ class TestSplitProductionSimulationExecute:
         assert "raw_path" in metadata_passed
         assert "training_path" in metadata_passed
         assert "production_path" in metadata_passed
+
+
+
+###### Aggiungere i test su _save_daily_batches!!!!!!

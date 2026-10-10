@@ -13,9 +13,9 @@ from imblearn.pipeline import Pipeline as ImbPipeline
 from mlflow.models.signature import infer_signature
 from sklearn.preprocessing import LabelEncoder
 
-from configs.paths import DataPathConfig
-from configs.schemas_loader import load_preprocessing_config
-from configs.tuning_config import TuningConfigLoader
+from configs.paths import DataPathConfig, PROJECT_ROOT
+from configs.pipeline_loader import load_preprocessing_config
+from configs.optuna_config import OptunaConfigLoader
 from src.optimization.core import optimize_model
 from src.training.data import load_split_and_encode_dataset
 from src.training.train import fit_and_evaluate_model
@@ -25,7 +25,7 @@ from src.utils.figures import (
     log_feature_importance,
     plot_target_distribution,
 )
-from src.utils.logger import setup_logger
+from src.utils.logger import restore_logging_after_mlflow
 
 # Import local modules
 from src.utils.validate_type import validate_type
@@ -37,13 +37,14 @@ logger = logging.getLogger(__name__)
 
 
 def _optimize_step(
-    tuning_config: TuningConfigLoader,
+    optuna_config: OptunaConfigLoader,
     X: pd.DataFrame,
     y: pd.Series,
     groups: pd.Series,
     path_config: DataPathConfig,
     trials_log_file: Path,
     save: bool = True,
+    label_encoder: list[str] | LabelEncoder | dict | None = None,
 ) -> tuple[str, str, str, dict]:
     """
     Optimize your model using Optuna and return the best model, resampling and scaling strategies, and hyperparameters.
@@ -55,13 +56,14 @@ def _optimize_step(
 
     # Validation of input elements
     validate_type(
-        tuning_config=(tuning_config, TuningConfigLoader),
+        optuna_config=(optuna_config, OptunaConfigLoader),
         X=(X, pd.DataFrame),
         y=(y, pd.Series),
         groups=(groups, pd.Series),
         path_config=(path_config, DataPathConfig),
         trials_log_file=(trials_log_file, Path),
         save=(save, bool),
+        label_encoder=(label_encoder, (list, LabelEncoder, dict, type(None))),
     )
 
     if len(X) != len(y):
@@ -71,9 +73,14 @@ def _optimize_step(
     # ------------------------------
 
     # Start the search for the best model and best hyperparameters
-    with mlflow.start_run(run_name="Optuna_Search"):
+    with mlflow.start_run(run_name=optuna_config.optuna_config["experiment"]["name_experiment"]):
         best_hyperparameters = optimize_model(
-            tuning_config=tuning_config, X=X, y=y, groups=groups, trials_log_file=trials_log_file
+            optuna_config=optuna_config, 
+            X=X, 
+            y=y, 
+            groups=groups, 
+            label_encoder=label_encoder,
+            trials_log_file=trials_log_file
         )
 
     best_resampling_strategy = best_hyperparameters.pop("resampling_strategy")
@@ -120,6 +127,7 @@ def _train_final_model_step(
     X_test: pd.DataFrame,
     y_train_encoded: pd.Series,
     y_test_encoded: pd.Series,
+    label_encoder: LabelEncoder,
     hyperparameters: dict,
     resampling_strategy: str,
     scaler_strategy: str,
@@ -141,6 +149,7 @@ def _train_final_model_step(
         X_test=(X_test, pd.DataFrame),
         y_train_encoded=(y_train_encoded, pd.Series),
         y_test_encoded=(y_test_encoded, pd.Series),
+        label_encoder=(label_encoder, LabelEncoder),
         hyperparameters=(hyperparameters, dict),
         resampling_strategy=(resampling_strategy, str),
         scaler_strategy=(scaler_strategy, str),
@@ -161,6 +170,7 @@ def _train_final_model_step(
         X_test=X_test,
         y_train_encoded=y_train_encoded,
         y_test_encoded=y_test_encoded,
+        label_encoder=label_encoder,
         preprocess_config=load_preprocessing_config(),
         custom_params=hyperparameters,
         resampling_strategy=resampling_strategy,
@@ -229,7 +239,7 @@ def _generate_reports_step(
     confusion_matrix_imag(
         y_true=y_test,
         y_pred=pd.Series(test_predictions),
-        label_condoer=label_encoder,
+        label_encoder=label_encoder,
         save_path=path_config.best_model / "confusion_matrix.png",
     )
     plot_target_distribution(
@@ -280,7 +290,7 @@ def _log_experiment_result(
     path_config: DataPathConfig,
     run_log_file: Path,
     trials_log_file: Path,
-    le_target: LabelEncoder,
+    label_encoder: LabelEncoder,
 ) -> None:
     """
     Log the results of the best model experiment to MLflow, including parameters,
@@ -301,15 +311,16 @@ def _log_experiment_result(
         path_config=(path_config, DataPathConfig),
         run_log_file=(run_log_file, Path),
         trials_log_file=(trials_log_file, Path),
+        label_encoder=(label_encoder, LabelEncoder)
     )
     if len(X_train) == 0 or len(X_test) == 0:
         raise ValueError("Attention length of X_train or X_test is zero!")
     # -----------------------------
 
     try:
-        path_dataset = path_config.processed_data_path.relative_to(Path(__file__).parent.parent.parent)
+        path_dataset = path_config.processed_data.relative_to(PROJECT_ROOT)
     except ValueError:
-        path_dataset = path_config.processed_data_path
+        path_dataset = path_config.processed_data
 
     # Log the results of the best model experiment to MLflow
     with mlflow.start_run(run_name=f"Optuna_Best_Model: {model_name.upper()}"):
@@ -342,9 +353,8 @@ def _log_experiment_result(
             mlflow.log_artifact(local_path=str(fig_path), artifact_path="figures")
 
         mlflow.log_artifact(local_path=str(path_config.optuna_config), artifact_path="configs")
-        mlflow.log_artifact(local_path=str(path_config.params_config), artifact_path="configs")
+        mlflow.log_artifact(local_path=str(path_config.preprocessing_config), artifact_path="configs")
         mlflow.log_artifacts(local_dir=str(path_config.random_forest_search_space.parent), artifact_path="search_space")
-        # mlflow.log_artifact(local_path=str(path_config.target_le), artifact_path="encoder")
         mlflow.log_artifact(local_path=str(path_config.requirements_file), artifact_path="environment")
 
         # Log the run and trials log files as artifacts in MLflow if they exist
@@ -363,39 +373,41 @@ def _log_experiment_result(
             input_example=X_train.iloc[:3],
         )
         mlflow.log_dict(
-            {"classes": le_target.classes_.tolist()},
+            {"classes": label_encoder.classes_.tolist()},
             artifact_file="encoder/label_encoder.json",
         )
 
+    restore_logging_after_mlflow()
+    logger.info("Optimization pipeline completed successfully!")
 
-def run_optimization_pipeline() -> None:
+
+def run_optimization_pipeline(
+        run_log_file: str | Path, 
+        trials_log_file: str | Path
+    ) -> None:
     """
     Run the entire optimization pipeline, including data loading, model optimization,
     final training, report generation, and logging to MLflow.
     """
     # Load configurations and set up MLflow tracking
     path_config = DataPathConfig()
-    tuning_config = TuningConfigLoader()
+    optuna_config = OptunaConfigLoader()
 
     # Set the MLflow tracking URI and experiment name
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI", f"sqlite:///{path_config.mlflow_db_path}")
     mlflow.set_tracking_uri(tracking_uri)
-    mlflow.set_experiment(tuning_config.optuna_config["name_experiment"])
+    mlflow.set_experiment(optuna_config.optuna_config["experiment"]["name_experiment"])
+    restore_logging_after_mlflow()
 
-    run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_log_file = path_config.opt_logs_dir / f"run_{run_timestamp}.log"
-    trials_log_file = path_config.opt_logs_dir / f"trials_{run_timestamp}.log"
-
-    setup_logger(run_log_file_path=run_log_file)
-
-    logger.info("=" * 60)
-    logger.info("Starting Optimization Pipeline")
-    logger.info("=" * 60)
+    logger.info("Starting Optimization Pipeline...")
+    logger.info(
+        f"To modify the search optimization, see the file: {Path(path_config.optuna_config).relative_to(PROJECT_ROOT)}"
+    )
 
     # ---------------------------------------------------------
     # 1. LOADING DATA AND SPATIAL SPLIT
     # ---------------------------------------------------------
-    logger.info("1. Loading data and performing spatial split...")
+    logger.info("1. Loading processed data and performing spatial split (on 'field_ID')...")
     try:
         X_train, X_test, y_train_encoded, y_test_encoded, groups_train, _, label_encoder = (
             load_split_and_encode_dataset()
@@ -410,7 +422,13 @@ def run_optimization_pipeline() -> None:
     # ---------------------------------------------------------
     try:
         best_model_name, best_resampling_strategy, best_scaler_strategy, clean_best_hyperparams = _optimize_step(
-            tuning_config, X_train, y_train_encoded, groups_train, path_config, trials_log_file
+            optuna_config=optuna_config, 
+            X=X_train, 
+            y=y_train_encoded, 
+            groups=groups_train, 
+            label_encoder=label_encoder,
+            path_config=path_config, 
+            trials_log_file=trials_log_file,
         )
     except Exception as e:
         logger.error("Error during the search for the best model and hyperparameters: %s", e, exc_info=True)
@@ -428,6 +446,7 @@ def run_optimization_pipeline() -> None:
             X_test=X_test,
             y_train_encoded=y_train_encoded,
             y_test_encoded=y_test_encoded,
+            label_encoder=label_encoder,
             hyperparameters=clean_best_hyperparams,
             resampling_strategy=best_resampling_strategy,
             scaler_strategy=best_scaler_strategy,
@@ -455,10 +474,10 @@ def run_optimization_pipeline() -> None:
 
     try:
         experiment_metadata = {
-            "cv_folds": str(tuning_config.optuna_config["n_folds_cv"]),
-            "optimized_metric": tuning_config.optuna_config["metric_to_optimize"],
-            "optuna_trials": str(tuning_config.optuna_config["n_trials"]),
-            "models_set": str(tuning_config.optuna_config["model_name"]),
+            "cv_folds": str(optuna_config.optuna_config["cross_validation"]["n_folds_cv"]),
+            "optimized_metric": optuna_config.optuna_config["study"]["metric_to_optimize"],
+            "optuna_trials": str(optuna_config.optuna_config["study"]["n_trials"]),
+            "models_set": str(optuna_config.optuna_config["search_space"]["candidate_models"]),
         }
 
         _log_experiment_result(
@@ -474,12 +493,9 @@ def run_optimization_pipeline() -> None:
             path_config=path_config,
             run_log_file=run_log_file,
             trials_log_file=trials_log_file,
-            le_target=label_encoder,
+            label_encoder=label_encoder,
         )
     except Exception as e:
         logger.error("Error during saving to MLflow: %s", e, exc_info=True)
         raise
 
-
-if __name__ == "__main__":
-    run_optimization_pipeline()

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from configs.schemas import PreprocessingConfig
+from configs.pipeline_config import PreprocessingConfig
 from src.training.cross_validation import run_cross_validation
 
 

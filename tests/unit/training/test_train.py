@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from imblearn.pipeline import Pipeline as ImbPipeline
 
-from configs.schemas import PreprocessingConfig
+from configs.pipeline_config import PreprocessingConfig
 from src.training.train import fit_and_evaluate_model
 
 

@@ -1,5 +1,16 @@
-data/*.csv
-data/*.json
+data/raw/*.csv
+data/raw/*.json
+data/interim/*.csv
+data/interim/*.json
+data/production/*.csv
+data/production/*.json
+data/production/daily_batches/*.csv
+data/production/daily_batches/*.json
+data/production/archived/*.csv
+data/production/archived/*.json
+data/processed*.csv
+data/processed/*.json
+
 logs/*.log
 
 .DS_Store

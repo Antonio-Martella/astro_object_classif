@@ -5,7 +5,7 @@ import pytest
 from sklearn.preprocessing import LabelEncoder
 
 from configs.paths import DataPathConfig
-from configs.schemas import SplitTrainingConfig
+from configs.pipeline_config import SplitTrainingConfig
 from src.training.data import load_split_and_encode_dataset
 
 

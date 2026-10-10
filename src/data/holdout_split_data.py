@@ -2,12 +2,9 @@ import json
 import logging
 from pathlib import Path
 
-import mlflow
 import pandas as pd
 
-from configs import SplitHoldoutConfig, load_split_holdout_config
-
-# Import local modules
+from configs import SplitHoldoutConfig
 from configs.paths import PROJECT_ROOT, DataPathConfig
 from src.utils.validate_type import validate_type
 
@@ -25,9 +22,13 @@ class TimeBasedSplitter:
         validate_type(splitdata_config=(splitdata_config, SplitHoldoutConfig))
         self.splitdata_config = splitdata_config
 
-    def split(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    def split(
+            self, 
+            df: pd.DataFrame
+        ) -> tuple[pd.DataFrame, pd.DataFrame, dict, dict]:
         validate_type(df=(df, pd.DataFrame))
-        metadata: dict[str, int | float | str] = {}
+        interim_metadata: dict[str, int | float | str] = {}
+        holdout_metadata: dict[str, int | float | str] = {}
 
         if self.splitdata_config.ref_col not in df.columns:
             raise ValueError(f"Column '{self.splitdata_config.ref_col}' not found in the dataset!")
@@ -37,7 +38,8 @@ class TimeBasedSplitter:
         if not (0 < self.splitdata_config.holdout_split < 1):
             raise ValueError("The holdout fraction must be between (0,1)")
 
-        metadata["split_prod_ratio"] = self.splitdata_config.holdout_split
+        
+        #metadata["split_prod_ratio"] = self.splitdata_config.holdout_split
 
         df_sorted = df.sort_values(by=ref_col, ascending=True)
 
@@ -49,21 +51,21 @@ class TimeBasedSplitter:
         df_train = df_sorted.iloc[:-n_holdout]
         df_prod = df_sorted.iloc[-n_holdout:]
 
-        metadata["n_train"] = len(df_sorted) - n_holdout
-        metadata["n_prod"] = n_holdout
+        interim_metadata["num_records"] = len(df_sorted) - n_holdout
+        holdout_metadata["num_records"] = n_holdout
 
-        metadata[f"train_{ref_col.lower()}_min"] = int(df_train[ref_col].min())
-        metadata[f"train_{ref_col.lower()}_max"] = int(df_train[ref_col].max())
+        interim_metadata[f"train_{ref_col.lower()}_min"] = int(df_train[ref_col].min())
+        interim_metadata[f"train_{ref_col.lower()}_max"] = int(df_train[ref_col].max())
 
-        metadata[f"prod_{ref_col.lower()}_min"] = int(df_prod[ref_col].min())
-        metadata[f"prod_{ref_col.lower()}_max"] = int(df_prod[ref_col].max())
+        holdout_metadata[f"prod_{ref_col.lower()}_min"] = int(df_prod[ref_col].min())
+        holdout_metadata[f"prod_{ref_col.lower()}_max"] = int(df_prod[ref_col].max())
 
-        metadata["split_method"] = f"time_based_{ref_col}"
+        interim_metadata["split_method"] = f"time_based_{ref_col}"
 
         logger.info(f"Training dataset shape: {df_train.shape}")
         logger.info(f"Production dataset shape: {df_prod.shape}")
 
-        return df_train, df_prod, metadata
+        return df_train, df_prod, interim_metadata, holdout_metadata
 
 
 class SplitProductionSimulation:
@@ -82,22 +84,18 @@ class SplitProductionSimulation:
 
     def execute(self) -> pd.DataFrame:
         df = self._load_dataset()
-        df_train, df_prod, metadata = self.splitter.split(df)
+        df_train, df_prod, interim_metadata, holdout_metadata= self.splitter.split(df)
 
         try:
-            metadata["raw_path"] = f"/{self.datapath_config.raw_data_path.relative_to(PROJECT_ROOT)}"
-            metadata["training_path"] = f"/{self.datapath_config.split_training_path.relative_to(PROJECT_ROOT)}"
-            metadata["production_path"] = f"/{self.datapath_config.split_production_path.relative_to(PROJECT_ROOT)}"
+            interim_metadata["raw_path"] = f"/{self.datapath_config.raw_data_path.relative_to(PROJECT_ROOT)}"
+            interim_metadata["training_path"] = f"/{self.datapath_config.split_training_path.relative_to(PROJECT_ROOT)}"
+            holdout_metadata["production_path"] = f"/{self.datapath_config.split_production_path.relative_to(PROJECT_ROOT)}"
         except ValueError:
-            metadata["raw_path"] = f"/{self.datapath_config.raw_data_path}"
-            metadata["training_path"] = f"/{self.datapath_config.split_training_path}"
-            metadata["production_path"] = f"/{self.datapath_config.split_production_path}"
+            interim_metadata["raw_path"] = f"/{self.datapath_config.raw_data_path}"
+            interim_metadata["training_path"] = f"/{self.datapath_config.split_training_path}"
+            holdout_metadata["production_path"] = f"/{self.datapath_config.split_production_path}"
 
-        self._save(df_train, df_prod, metadata)
-
-        print(type(self.splitter.splitdata_config))
-        print(self.splitter.splitdata_config)
-        print(self.splitter.splitdata_config.daily_split_batch_size)
+        self._save(df_train, df_prod, interim_metadata, holdout_metadata)
 
         self._save_daily_batches(
             df_prod,
@@ -122,16 +120,24 @@ class SplitProductionSimulation:
 
         return pd.read_csv(load_path)
 
-    def _save(self, df_train: pd.DataFrame, df_prod: pd.DataFrame, metadata: dict) -> None:
+    def _save(
+            self, 
+            df_train: pd.DataFrame, 
+            df_prod: pd.DataFrame, 
+            interim_metadata: dict, 
+            holdout_metadata: dict
+        ) -> None:
         validate_type(
             df_train=(df_train, pd.DataFrame),
             df_prod=(df_prod, pd.DataFrame),
-            metadata=(metadata, dict),
+            interim_metadata=(interim_metadata, dict),
+            holdout_metadata=(holdout_metadata, dict)
         )
 
         train_path = self.datapath_config.split_training_path
         prod_path = self.datapath_config.split_production_path
-        metadata_path = self.datapath_config.split_metadata_path
+        interim_metadata_path = self.datapath_config.split_interim_metadata_path
+        prod_metadata_path = self.datapath_config.split_production_metadata_path
 
         train_path.parent.mkdir(parents=True, exist_ok=True)
         prod_path.parent.mkdir(parents=True, exist_ok=True)
@@ -139,8 +145,11 @@ class SplitProductionSimulation:
         df_train.to_csv(train_path, index=False)
         df_prod.to_csv(prod_path, index=False)
 
-        with open(metadata_path, "w", encoding="utf-8") as file:
-            json.dump(metadata, file, indent=4, ensure_ascii=False)
+        with open(interim_metadata_path, "w", encoding="utf-8") as file:
+            json.dump(interim_metadata, file, indent=4, ensure_ascii=False)
+
+        with open(prod_metadata_path, "w", encoding="utf-8") as file:
+            json.dump(holdout_metadata, file, indent=4, ensure_ascii=False)
 
         try:
             display_train_path = train_path.relative_to(PROJECT_ROOT)
@@ -158,22 +167,19 @@ class SplitProductionSimulation:
             batch_size=(batch_size, int),
         )
         count_day = 0
-        self.datapath_config.split_production_batch_path.mkdir(parents=True, exist_ok=True)
+        self.datapath_config.split_daily_batches_path.mkdir(parents=True, exist_ok=True)
+        daily_file_name = []
         while len(df_prod) > count_day * batch_size:
             batch_day = df_prod.iloc[count_day * batch_size : (count_day + 1) * batch_size]
-            daily_path = Path(self.datapath_config.split_production_batch_path) / f"day_{str(count_day + 1)}.csv"
-            batch_day.to_csv(daily_path)
+            daily_path = Path(self.datapath_config.split_daily_batches_path) / f"day_{str(count_day + 1)}.csv"
+            batch_day.to_csv(daily_path, index=False)
             count_day += 1
+            daily_file_name.append(f"{str(daily_path.relative_to(self.datapath_config.split_daily_batches_path))}")
 
+        metadata: dict[str, int | Path] = {}
+        metadata["number_file"] = count_day
+        metadata["number_datapoint_per_file"] = batch_size
+        metadata["path_batch_files"] = daily_file_name
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-    d_config = DataPathConfig()
-    s_config = load_split_holdout_config()
-
-    db_path = d_config.mlflow_db_path  # Path.cwd() / "mlflow.db"
-    mlflow.set_tracking_uri(f"sqlite:///{db_path}")
-    mlflow.set_experiment("Astro_Object_Classification_DataPrep")
-
-    SplitProductionSimulation(d_config, s_config).execute()
+        with open(self.datapath_config.split_daily_batches_metadata_path, "w", encoding="utf-8") as file:
+            json.dump(metadata, file, indent=4)

@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from configs.paths import DataPathConfig
-from configs.schemas import SplitTrainingConfig
+from configs.pipeline_config import SplitTrainingConfig
 from src.data.data_loader import (
     _define_features_target,
     _load_dataset,

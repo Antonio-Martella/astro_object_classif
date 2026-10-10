@@ -4,8 +4,8 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from configs.paths import DataPathConfig
-from configs.schemas import SplitTrainingConfig
-from configs.schemas_loader import load_split_training_config
+from configs.pipeline_config import SplitTrainingConfig
+from configs.pipeline_loader import load_split_training_config
 from src.data.data_loader import load_and_split_data
 from src.training.target_encoding import encode_targets_and_save
 from src.utils.validate_type import validate_type

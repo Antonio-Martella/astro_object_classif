@@ -1,5 +1,4 @@
 import logging
-import random
 import time
 from pathlib import Path
 
@@ -7,55 +6,37 @@ import mlflow
 import pandas as pd
 
 from configs.paths import DataPathConfig
-from src.predict.predict import AstroPredict
+from src.predict.predictor import AstroPredict
 from src.utils.logger import restore_logging_after_mlflow, setup_logger
 from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)
 
-
-def predict_single_instance(record: pd.DataFrame, predictor: AstroPredict) -> dict:
+def _predict_single_instance(record: pd.DataFrame, predictor: AstroPredict) -> dict:
     """
-    It performs inference on a single astronomical record and measures the exact latency.
-
-    Args:
-        record (pd.DataFrame): DataFrame containing the single astronomical record
-            to be used for the prediction.
-        predictor (AstroPredict): A predictor instance containing the trained model
-            and the pipeline needed to perform inference.
-
-    Returns:
-            dict: Contains 'prediction', 'latency_seconds' and 'true_class' (if present).
+    Performs inference on a single astronomical record and measures exact latency.
     """
     validate_type(record=(record, pd.DataFrame), predictor=(predictor, AstroPredict))
     if len(record) != 1:
-        raise ValueError(f"predict_single_instance expects exactly 1 row, got {len(record)}.")
-
-    true_class = record["class"].iloc[0] if "class" in record.columns else None
-
+        raise ValueError(f"_predict_single_instance expects exactly 1 row, got {len(record)}.")
     start_time = time.perf_counter()
     df_pred = predictor.predict(record)
     end_time = time.perf_counter()
-
-    latency = end_time - start_time
-    predicted_class = df_pred["prediction"].iloc[0]
-
+    latency_ms = (end_time - start_time) * 1000.0
     return {
-        "prediction": predicted_class,
-        "latency_seconds": latency,
-        "true_class": true_class,
+        "prediction": str(df_pred["prediction"].iloc[0]),
+        "proba_prediction": float(df_pred["proba_prediction"].iloc[0]),
+        "latency_ms": latency_ms,
+        "timestamp": str(df_pred["prediction_timestamp"].iloc[0]),
     }
 
 
-def run_simulation_streaming(
-    input_csv_path: str | Path,
+def run_single_prediction(
+    predictor: AstroPredict | None = None,
     model_name: str = "Classification_Astro_Model",
     model_version: str = "latest",
-    max_records: int | None = None,
-    min_delay: float = 1.0,
-    max_delay: float = 2.0,
     data_path: DataPathConfig | None = None,
-) -> None:
+) -> dict | None:
     """
     Simulates a real-time astronomical telemetry stream.
 
@@ -81,66 +62,99 @@ def run_simulation_streaming(
         None: The function runs the simulation and returns no value.
     """
     validate_type(
-        input_csv_path=(input_csv_path, (str, Path)),
+        predictor=(predictor, (AstroPredict, type(None))),
         model_name=(model_name, str),
         model_version=(model_version, str),
-        max_records=(max_records, (int, type(None))),
-        min_delay=(min_delay, float),
-        max_delay=(max_delay, float),
         data_path=(data_path, (DataPathConfig, type(None))),
     )
 
-    if data_path is None:
-        data_path = DataPathConfig()
+    data_path = DataPathConfig() if data_path is None else data_path
 
-    mlflow.set_tracking_uri(f"sqlite:///{data_path.mlflow_db_path}")
+    if predictor is None:
+        try:
+            predictor = AstroPredict(
+                model_name=model_name,
+                model_version=model_version,
+            )
+            restore_logging_after_mlflow()
+            logger.info("Predictor instantiation successful.")
+        except Exception as e:
+            raise RuntimeError(f"Predictor instantiation failed. Error: {e}") from e
 
-    input_path = Path(input_csv_path)
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file not found in: '{input_path}'")
-
-    logger.info(f"Loading dataset for Streaming Prediction: {input_path}")
-    df = pd.read_csv(input_csv_path)
-    logger.info(f"Dataset successfully loaded ({len(df)} observations).")
-
-    try:
-        predictor = AstroPredict(
-            model_name=model_name,
-            model_version=model_version,
-        )
-        restore_logging_after_mlflow()
-        logger.info("Predictor instantiation successful.")
-    except Exception as e:
-        raise RuntimeError(f"Predictor instantiation failed. Error: {e}") from e
 
     logger.info("=" * 60)
     logger.info("STARTING REAL-TIME STREAMING SIMULATION")
     logger.info("=" * 60)
 
-    count = 0
+    mlflow.set_tracking_uri(f"sqlite:///{data_path.mlflow_db_path}")
+
     while True:
-        if max_records is not None and count >= max_records:
-            logger.info(f"The limit of {max_records} simulated observations has been reached. Stop.")
-            break
-
-        time.sleep(random.uniform(min_delay, max_delay))
-
-        record_num = random.randint(0, len(df) - 1)
-        record = df.iloc[record_num : record_num + 1]
-
+        raw_values = input(
+            "\nEnter the 6 values ['u', 'g', 'r', 'i', 'z', 'redshift'] separated by comma\n"
+            "(e.g. 19.47, 17.04, 15.95, 15.50, 15.23, 0.635): "
+        )
         try:
-            res = predict_single_instance(record=record, predictor=predictor)
-            count += 1
-            true_info = f" (true: {res['true_class']})" if res["true_class"] else ""
-            logger.info(
-                f"\033[32m(latency {res['latency_seconds']:.4f}s)\033[0m "
-                f"OBS #{record_num}: prediction --> \x1b[31m{res['prediction']}{true_info}\x1b[0m"
+            record_values = [float(x.strip()) for x in raw_values.split(",")]
+        except ValueError:
+            logger.warning("Invalid input: all 6 values must be numbers (floats). Please try again.")
+            continue
+
+        if len(record_values) != 6:
+            logger.warning(
+                f"Invalid input: expected 6 values ('u', 'g', 'r', 'i', 'z', 'redshift'), got {len(record_values)}."
             )
-        except Exception as e:
-            logger.error(f"Errore durante l'elaborazione del record #{record_num}: {e}")
+            continue
 
+        data = {
+            "u": record_values[0],
+            "g": record_values[1],
+            "r": record_values[2],
+            "i": record_values[3],
+            "z": record_values[4],
+            "redshift": record_values[5],
+        }
+        record = pd.DataFrame(data, index=[0])
 
-if __name__ == "__main__":
-    setup_logger()
-    data_path = DataPathConfig()
-    run_simulation_streaming(input_csv_path=data_path.split_production_path)
+        prediction = _predict_single_instance(record, predictor)
+
+        prob = prediction["proba_prediction"]
+        filled = int(round(prob * 40))
+        bar = "█" * filled + "░" * (40 - filled)
+
+        # Indici di colore astrofisici (uguali a quelli generati dalla pipeline)
+        u_g = data["u"] - data["g"]
+        g_r = data["g"] - data["r"]
+        r_i = data["r"] - data["i"]
+        i_z = data["i"] - data["z"]
+
+        line_bands = f"Bands       : u={data['u']:.2f} | g={data['g']:.2f} | r={data['r']:.2f} | i={data['i']:.2f} | z={data['z']:.2f}"
+        line_colors = f"Color Index : u-g={u_g:.2f} | g-r={g_r:.2f} | r-i={r_i:.2f} | i-z={i_z:.2f}"
+        line_red = f"Redshift    : {data['redshift']:.5f}"
+        line_pred = f"Prediction  : {prediction['prediction']}"
+        line_conf = f"Confidence  : [{bar}] {prob * 100:.2f}%"
+        line_lat = f"Latency     : {prediction['latency_ms']:.2f} ms (Model: {model_name} [{model_version}])"
+        line_time = f"Timestamp   : {prediction['timestamp']}"
+
+        logger.info("╭" + "─" * 70 + "╮")
+        logger.info("│" + "ASTRONOMICAL OBJECT CLASSIFICATION REPORT".center(70) + "│")
+        logger.info("├" + "─" * 70 + "┤")
+        logger.info(f"│  {line_bands:<67} │")
+        logger.info(f"│  {line_colors:<67} │")
+        logger.info(f"│  {line_red:<67} │")
+        logger.info("├" + "─" * 70 + "┤")
+        logger.info(f"│  {line_pred:<67} │")
+        logger.info(f"│  {line_conf:<67} │")
+        logger.info(f"│  {line_lat:<67} │")
+        logger.info(f"│  {line_time:<67} │")
+        logger.info("╰" + "─" * 70 + "╯")
+
+        while True:
+            continue_evaluation = input("\nDo you wish to evaluate other records? [y/n]: ").strip().lower()
+            if continue_evaluation in ("y", "yes"):
+                logger.info("User requested another single-record evaluation.")
+                break
+            elif continue_evaluation in ("n", "no"):
+                logger.info("User ended single-record evaluation session.")
+                return
+            else:
+                logger.warning("Invalid response; please answer with 'y' or 'n'.")

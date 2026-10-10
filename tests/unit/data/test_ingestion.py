@@ -5,7 +5,7 @@ import pytest
 from kagglehub import KaggleDatasetAdapter
 
 from configs.paths import DataPathConfig
-from configs.schemas import KaggleConfig
+from configs.pipeline_config import KaggleConfig
 from src.data.ingestion import KaggleDownloader
 
 

@@ -2,7 +2,7 @@ import numpy as np
 from catboost import CatBoostClassifier
 from lightgbm import LGBMClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
@@ -13,6 +13,23 @@ from src.models import BaseModel
 class RandomForestModel(BaseModel, BaseEstimator, ClassifierMixin):
     def __init__(self, **kwargs):
         self.model = RandomForestClassifier(**kwargs)
+
+    def fit(self, X, y, **kwargs):
+        self.classes_ = np.unique(y)
+        self.model.fit(X, y, **kwargs)
+        self.is_fitted_ = True
+        return self
+
+    def predict(self, X):
+        return self.model.predict(X)
+
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
+
+
+class ExtraTreesModel(BaseModel, BaseEstimator, ClassifierMixin):
+    def __init__(self, **kwargs):
+        self.model = ExtraTreesClassifier(**kwargs)
 
     def fit(self, X, y, **kwargs):
         self.classes_ = np.unique(y)

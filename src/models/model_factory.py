@@ -7,6 +7,7 @@ from src.models import (
     LightGBMModel,
     LogRegModel,
     RandomForestModel,
+    ExtraTreesModel,
     SGDModel,
     SVCModel,
     XGBoostModel,
@@ -19,6 +20,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 class ModelFactory:
     _registry: dict[str, type[BaseModel]] = {
         "random_forest": RandomForestModel,
+        "extra_trees": ExtraTreesModel,
         "xgboost": XGBoostModel,
         "lightgbm": LightGBMModel,
         "catboost": CatBoostModel,
@@ -32,7 +34,7 @@ class ModelFactory:
     def get_model(cls, model_name: str, **kwargs: Any) -> BaseModel:
         if model_name not in cls._registry:
             valid_models = list(cls._registry.keys())
-            raise ValueError(f"Modello '{model_name}' non supportato. I modelli validi sono: '{valid_models}'")
+            raise ValueError(f"Model '{model_name}' is not supported. Valid models are:'{valid_models}'")
 
         model_class = cls._registry[model_name]
 

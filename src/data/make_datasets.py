@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 from pathlib import Path
 from typing import get_type_hints
@@ -8,20 +9,19 @@ import mlflow
 import pandas as pd
 from imblearn.pipeline import Pipeline as Imbpipeline
 
+# Internal moduls
 from configs.paths import PROJECT_ROOT, DataPathConfig
-from configs.schemas import CleanPreprocessingConfig, KaggleConfig, SplitHoldoutConfig
-from configs.schemas_loader import (
+from configs.pipeline_config import CleanPreprocessingConfig, KaggleConfig, SplitHoldoutConfig
+from configs.pipeline_loader import (
     load_cleaning_preprocessing_config,
     load_kaggle_config,
     load_split_holdout_config,
 )
 from src.data.holdout_split_data import SplitProductionSimulation
-
-# Internal moduls
 from src.data.ingestion import KaggleDownloader
 from src.data.preprocessing import ProcessedDataSaver, build_stateless_cleaning_pipeline
 from src.optimization.search import file_md5
-from src.utils.logger import restore_logging_after_mlflow, setup_logger
+from src.utils.logger import restore_logging_after_mlflow
 from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)
@@ -50,18 +50,27 @@ def run_split(holdout_split_config: SplitHoldoutConfig, path_config: DataPathCon
 
 def run_cleaning(
     df: pd.DataFrame,
-    path_config: DataPathConfig,
-    clean_preprocessing_config: CleanPreprocessingConfig,
+    path_config: DataPathConfig | None = None,
+    clean_preprocessing_config: CleanPreprocessingConfig | None = None,
 ) -> Imbpipeline:
-    for name, expected_type in get_type_hints(run_cleaning).items():
-        if name == "return":
-            continue
-        validate_type(name=(locals()[name], expected_type))
+    validate_type(
+        df=(df, pd.DataFrame),
+        path_config=(path_config, (DataPathConfig, type(None))),
+        clean_preprocessing_config=(clean_preprocessing_config, (CleanPreprocessingConfig, type(None)))
+    )
+
+    path_config = DataPathConfig() if path_config is None \
+        else path_config
+    
+    clean_preprocessing_config = load_cleaning_preprocessing_config() if clean_preprocessing_config is None \
+        else clean_preprocessing_config
 
     cleaner_pipeline = build_stateless_cleaning_pipeline(clean_preprocessing_config)
 
-    df_clean = cleaner_pipeline.fit_transform(df)
-    ProcessedDataSaver(path_config).save(df_clean)
+    X = df.drop(labels=["class", "field_ID"], axis=1)
+    meta_cols = df[["field_ID", "class"]]
+    X_clean = cleaner_pipeline.fit_transform(X)
+    ProcessedDataSaver(path_config).save(pd.concat([X_clean, meta_cols], axis=1))
 
     os.makedirs(Path(path_config.cleaner_pipeline).parent, exist_ok=True)
     joblib.dump(cleaner_pipeline, path_config.cleaner_pipeline)
@@ -103,9 +112,9 @@ def run_mlflow_tracking(pipeline: Imbpipeline, path_config: DataPathConfig) -> N
         )
         mlflow.set_tags(
             {
-                "processed_dataset_path": path_config.processed_data_path.relative_to(PROJECT_ROOT),
-                "processed_dataset_md5": file_md5(path_config.processed_data_path),
-                "processed_dataset_size_bytes": os.path.getsize(path_config.processed_data_path),
+                "processed_dataset_path": path_config.processed_data.relative_to(PROJECT_ROOT),
+                "processed_dataset_md5": file_md5(path_config.processed_data),
+                "processed_dataset_size_bytes": os.path.getsize(path_config.processed_data),
             }
         )
 
@@ -117,12 +126,11 @@ def run_mlflow_tracking(pipeline: Imbpipeline, path_config: DataPathConfig) -> N
 
         restore_logging_after_mlflow()
         logger.info("Process finished!")
-        mlflow.log_artifact(local_path=str(path_config.opt_logs_make_dataset), artifact_path="logs")
+        mlflow.log_artifact(local_path=str(path_config.make_dataset_log), artifact_path="logs")
 
 
-def main():
+def make_datasets():
     path_config = DataPathConfig()
-    setup_logger(run_log_file_path=path_config.opt_logs_make_dataset)
 
     # ###################################
     # #### 0. Load the Configuration ####
@@ -139,7 +147,7 @@ def main():
     # #############################################
     # #### 1. Download the dataset from Kaggle ####
     # #############################################
-    logger.info("Fase 1: Download dati da Kaggle...")
+    logger.info("Phase 1: Downloading data from Kaggle...")
     try:
         run_ingestion(kaggle_config, path_config)
     except Exception as e:
@@ -149,17 +157,39 @@ def main():
     # ########################################################################
     # #### 2. Splitting raw dataset into Training and Production datasets ####
     # ########################################################################
-    logger.info("Fase 2: The raw dataset is split into a Training dataset and a Production datase...")
+    logger.info("Phase 2: The raw dataset is split into a Training dataset and a Production datase...")
     try:
         df_training = run_split(holdout_split_config, path_config)
     except Exception as e:
         logger.exception("Error occurred during the dataset splitting (Train/Production).")
         raise RuntimeError(f"Phase 2 failed: {e}") from e
 
+    try: 
+        directory=path_config.split_archived_batch_path
+        directory.mkdir(parents=True, exist_ok=True)
+        for file in directory.iterdir():
+            if file.is_file():
+                file.unlink()
+        metadata_batch = {
+            "number_file": 0,
+            "number_records": 0,
+            "archived_batch_files": []
+        }
+        path_config.split_archived_batch_metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path_config.split_archived_batch_metadata_path, "w", encoding="utf-8") as file:
+            json.dump(metadata_batch, file, indent=4)
+        path_config.retraining_decision_report.parent.mkdir(parents=True, exist_ok=True)
+        with open(path_config.retraining_decision_report, "w") as file:
+            json.dump({}, file, indent=4)
+        
+    except Exception as e:
+        logger.exception("Error occurred while cleaning the archived batch directory.")
+        raise RuntimeError(f"Phase 2 failed: {e}") from e
+
     # ######################################
     # #### 3. CLEANING and SAVE DATASET ####
     # ######################################
-    logger.info("Fase 3: Cleaning Training dataset...")
+    logger.info("Phase 3: Cleaning Training dataset...")
     try:
         cleaner_pipeline = run_cleaning(df_training, path_config, preprocessing_config)
     except Exception as e:
@@ -169,7 +199,7 @@ def main():
     # ############################
     # #### 4. MLflow Tracking ####
     # ############################
-    logger.info("Fase 4: MLflow Tracking...")
+    logger.info("Phase 4: MLflow Tracking...")
     try:
         run_mlflow_tracking(cleaner_pipeline, path_config)
     except Exception as e:
@@ -178,4 +208,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    make_datasets()

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from imblearn.pipeline import Pipeline as ImbPipeline
 
-from configs.schemas import PreprocessingConfig
+from configs.pipeline_config import PreprocessingConfig
 from src.training.pipeline import build_training_pipeline
 
 

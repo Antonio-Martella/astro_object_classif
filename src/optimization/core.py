@@ -7,10 +7,11 @@ import mlflow
 import optuna
 import pandas as pd
 from optuna.trial import FrozenTrial
+from sklearn.preprocessing import LabelEncoder
 
 # Local imports
-from configs.random_seed_loader import load_random_seed_config
-from configs.tuning_config import TuningConfigLoader
+from configs.pipeline_loader import load_random_seed_config
+from configs.optuna_config import OptunaConfigLoader
 from src.training.cross_validation import run_cross_validation
 from src.utils.validate_type import validate_type
 
@@ -65,15 +66,15 @@ def apply_optuna_suggestions(trial, search_space: dict) -> dict:
 
 
 def make_mlflow_callback(
-    tuning_config: TuningConfigLoader,
+    optuna_config: OptunaConfigLoader,
     trials_log_file: Path,
 ) -> Callable[[optuna.Study, FrozenTrial], None]:
     """
     Create a callback for Optuna that logs the results of each trial to MLflow and to a separate log file.
     """
-    validate_type(tuning_config=(tuning_config, TuningConfigLoader), trials_log_file=(trials_log_file, Path))
+    validate_type(optuna_config=(optuna_config, OptunaConfigLoader), trials_log_file=(trials_log_file, Path))
 
-    metric_name = tuning_config.optuna_config["metric_to_optimize"]
+    metric_name = optuna_config.optuna_config["study"]["metric_to_optimize"]
 
     os.makedirs(trials_log_file.parent, exist_ok=True)
     trial_logger = logging.getLogger("optuna_trials")
@@ -111,11 +112,12 @@ def make_mlflow_callback(
 
 
 def optimize_model(
-    tuning_config: TuningConfigLoader,
+    optuna_config: OptunaConfigLoader,
     X: pd.DataFrame,
     y: pd.Series,
     groups: pd.Series,
     trials_log_file: Path,
+    label_encoder: list[str] | LabelEncoder | dict | None = None,
 ) -> dict:
     """
     Orchestrates the Bayesian optimization of hyperparameters for a specific model using Optuna.
@@ -125,27 +127,36 @@ def optimize_model(
     and evaluates its performance. The process is parallelized to maximize efficiency.
 
     Args:
-        - tuning_config (TuningConfigLoader): Configuration for model optimization,
-          including search space and optimization settings.
-        - X (pd.DataFrame): The feature dataset used for training and validation.
-        - y (pd.Series): The target variable corresponding to the feature dataset.
-        - groups (pd.Series): A series indicating the group for each sample, used for group-based cross-validation.
-        - trials_log_file (Path): Path to the log file where trial details will be recorded
+        optuna_config : OptunaConfigLoader
+            Configuration for model optimization, including search space and optimization settings.
+        X : pd.DataFrame
+            The feature dataset used for training and validation.
+        y : pd.Series
+            The target variable corresponding to the feature dataset.
+        groups : pd.Series
+            A series indicating the group for each sample, used for group-based cross-validation.
+        trials_log_file : Path
+            Path to the log file where trial details will be recorded.
+        label_encoder : list, LabelEncoder, dict, None
+            Label encoder for the target.
 
-    Returns:
-        - dict: A dictionary containing the best combination of hyperparameters found at the end of all trials.
+    Returns
+    -------
+    dict: 
+        A dictionary containing the best combination of hyperparameters found at the end of all trials.
     """
 
     # Validation of input elements
     validate_type(
-        tuning_config=(tuning_config, TuningConfigLoader),
+        optuna_config=(optuna_config, OptunaConfigLoader),
         X=(X, pd.DataFrame),
         y=(y, pd.Series),
         groups=(groups, pd.Series),
         trials_log_file=(trials_log_file, Path),
+        label_encoder=(label_encoder, (list, LabelEncoder, dict, type(None))),
     )
 
-    if tuning_config is None:
+    if optuna_config is None:
         raise TypeError("Attention configuration for optimization not provided or not valid!")
 
     if X.empty or y.empty:
@@ -164,8 +175,10 @@ def optimize_model(
     def objective(trial):
         # Generate a set of hyperparameters for the current trial based on the search space defined
         # in the configuration.
-        current_model = trial.suggest_categorical("model_name", tuning_config.optuna_config["model_name"])
-        search_space = tuning_config.get_search_space(model_name=current_model)
+        current_model = trial.suggest_categorical(
+            "model_name", optuna_config.optuna_config["search_space"]["candidate_models"]
+        )
+        search_space = optuna_config.get_search_space(model_name=current_model)
         raw_trial_params = apply_optuna_suggestions(trial, search_space)
         clean_params = {}
         prefix = f"{current_model}_"
@@ -189,35 +202,38 @@ def optimize_model(
             X=X,
             y=y,
             groups=groups,
-            n_splits=tuning_config.optuna_config["n_folds_cv"],
+            label_encoder=label_encoder,
+            n_splits=optuna_config.optuna_config["cross_validation"]["n_folds_cv"],
             resampling_strategy=current_strategy,
             scaler_strategy=current_scaler,
             custom_params=clean_params,
         )
 
-        return cv_results[tuning_config.optuna_config["metric_to_optimize"]]
+        return cv_results[optuna_config.optuna_config["study"]["metric_to_optimize"]]
 
     # Set up the Optuna sampler with the specified number of startup trials, multivariate option,
     # and random seed for reproducibility.
     sampler = optuna.samplers.TPESampler(
-        n_startup_trials=tuning_config.optuna_config["n_startup_trials"],
-        multivariate=tuning_config.optuna_config["multivariate"],
+        n_startup_trials=optuna_config.optuna_config["study"]["n_startup_trials"],
+        multivariate=optuna_config.optuna_config["study"]["multivariate"],
         warn_independent_sampling=False,
         seed=load_random_seed_config().random_seed_optuna,
     )
 
-    logger.info(f"Number of trials {tuning_config.optuna_config['n_trials']}")
+    logger.info(f"Number of trials {optuna_config.optuna_config['study']['n_trials']}")
     # Set up the Optuna study with the specified optimization direction, study name, and sampler.
     study = optuna.create_study(
-        direction=tuning_config.optuna_config["direction"], study_name="opt_astro", sampler=sampler
+        direction=optuna_config.optuna_config["study"]["direction"], 
+        study_name=optuna_config.optuna_config["study"]["study_name"], 
+        sampler=sampler
     )
 
     # Run the optimization process, which will execute the objective function for the specified number of trials.
     study.optimize(
         objective,
-        n_trials=tuning_config.optuna_config["n_trials"],
+        n_trials=optuna_config.optuna_config["study"]["n_trials"],
         show_progress_bar=True,
-        callbacks=[make_mlflow_callback(tuning_config, trials_log_file)],
+        callbacks=[make_mlflow_callback(optuna_config, trials_log_file)],
     )
 
     # Capture the best hyperparameters found at the end of the study, which will then be injected into the final
@@ -225,7 +241,7 @@ def optimize_model(
     final_best_params = study.best_params.copy()
 
     # Retrieve the complete search space for the optimized model, so that FIXED parameters can be re-injected
-    search_space = tuning_config.get_search_space(model_name=final_best_params["model_name"])
+    search_space = optuna_config.get_search_space(model_name=final_best_params["model_name"])
 
     # Re-inject all FIXED parameters from our search_space
     for param_name, config in search_space.items():

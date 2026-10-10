@@ -1,6 +1,7 @@
 import logging
 
 import kagglehub
+import json
 import pandas as pd
 from kagglehub import KaggleDatasetAdapter
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -62,6 +63,17 @@ class KaggleDownloader:
 
         self.datapath_config.raw_data_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(self.datapath_config.raw_data_path, index=False)
+
+        metadata = {}
+        metadata["path_dataset_kaggle"] = self.kaggle_config.dataset_path
+        metadata["dataset_length"] = len(df)
+        metadata["columns"] = df.columns.to_list()
+        with open(
+            self.datapath_config.raw_data_metadata,
+            "w",
+            encoding="utf-8",
+        ) as file:
+            json.dump(metadata, file, indent=4)
 
         try:
             display_path = self.datapath_config.raw_data_path.relative_to(PROJECT_ROOT)
