@@ -246,8 +246,8 @@ batch_dir = paths.split_daily_batches_path
 | **Production** | `production_dir` | `data/production` |
 | **Production** | `split_production_path` | `data/production/holdout_dataset.csv` |
 | **Production** | `split_production_metadata_path` | `data/production/holdout_dataset_metadata.json` |
-| **Production** | `split_daily_batch_path` | `data/production/daily_batch` |
-| **Production** | `split_daily_batch_metadata_path` | `data/production/daily_batch/daily_batch_metadata.json` |
+| **Production** | `split_daily_batches_path` | `data/production/daily_batches` |
+| **Production** | `split_daily_batches_metadata_path` | `data/production/daily_batches/daily_batches_metadata.json` |
 | **Production** | `split_archived_batch_path` | `data/production/archived_batches` |
 | **Production** | `split_archived_batch_metadata_path`| `data/production/archived_batches/archived_batches_metadata.json` |
 | **Production** | `holdout_dataset_full_predicted` | `data/production/predictions/holdout_pred.csv` |
@@ -291,7 +291,7 @@ python main.py --mode make-datasets
    - `data/interim/training_dataset.csv` (earliest 80%)
    - `data/production/holdout_dataset.csv` (latest 20%)
 3. **Stateless Cleaning & Feature Engineering (`src.data.preprocessing`):** Reads [`configs/preprocessing.yaml`](file:///Users/antoniomartella/Progetti%20GitHub/astro_object_classif/configs/preprocessing.yaml), replaces `-9999` sentinels, derives photometric color indices ($\Delta(u-g), \Delta(g-r), \Delta(r-i), \Delta(i-z)$), serializes `models/cleaner pipeline/cleaner_pipeline.pkl`, and writes `data/processed/processed_data.csv`.
-4. **Production Slicing (`src.data.holdout_split_data`):** Slices the 20% holdout into sequential batches of 1,000 observations each, populating `data/production/daily_batch/day_1.csv` ... `day_N.csv`.
+4. **Production Slicing (`src.data.holdout_split_data`):** Slices the 20% holdout into sequential batches of 1,000 observations each, populating `data/production/daily_batches/day_1.csv` ... `day_N.csv`.
 5. **Cryptographic Lineage & MLflow Tracking:** Logs all dataset hashes, byte sizes, and paths into MLflow Tracking under the experiment `Astro_Object_Classification` (run: `Cleaner_pipeline`).
 
 ---
@@ -305,7 +305,7 @@ In accordance with MLOps best practices, tabular data files and transient model 
 | `data/raw/` | Empty directory with `.gitkeep` | `Star_Classification.csv` + metadata | Source data fetched on-demand via Kaggle API |
 | `data/interim/` | Empty directory with `.gitkeep` | `training_dataset.csv` + metadata | Intermediate split generated deterministically |
 | `data/processed/` | Empty directory with `.gitkeep` | `processed_data.csv` + metadata | Cleaned training dataset with engineered features |
-| `data/production/daily_batch/` | Empty directory with `.gitkeep` | `day_1.csv` ... `day_N.csv` | Chronological streaming simulation batches |
+| `data/production/daily_batches/` | Empty directory with `.gitkeep` | `day_1.csv` ... `day_N.csv` | Chronological streaming simulation batches |
 | `data/production/archived_batches/` | Empty directory with `.gitkeep` | Batches retired after retraining triggers | Dynamic state managed by monitoring policy |
 | `configs/*.yaml` | **Tracked in Git** | **Tracked in Git** | Declarative configuration is the Single Source of Truth |
 | `configs/paths.py` | **Tracked in Git** | **Tracked in Git** | Immutable path resolution engine |
@@ -334,5 +334,5 @@ The dataset originates from the **Sloan Digital Sky Survey (SDSS)**. Key domain-
 ## Governance & Git Hygiene
 
 - **Version Control Policy:** Large tabular artifacts (`*.csv`), binary serializations, and streaming batches should be tracked via [DVC (Data Version Control)](https://dvc.org/) or external object storage (e.g., S3/GCS) in high-scale environments.
-- **Repository Cleanliness:** Local runtime files, generated predictions, and transient batches in `daily_batch/` are excluded by `.gitignore`, while folder structures are preserved in Git using `.gitkeep`.
+- **Repository Cleanliness:** Local runtime files, generated predictions, and transient batches in `daily_batches/` are excluded by `.gitignore`, while folder structures are preserved in Git using `.gitkeep`.
 - **Integrity Validation:** Before starting model training or HPO sweeps, the test suite (`tests/unit/configs/test_paths.py` and `tests/unit/data/`) validates that all critical directories, suffixes, and metadata schemas exist and conform to domain invariants.
