@@ -43,14 +43,14 @@ The data subsystem follows a staged progressive refinement pattern, separating i
 │  data/interim/                    │           │  data/production/                 │
 │  training_dataset.csv             │           │  holdout_dataset.csv              │
 └────────────────┬──────────────────┘           └─────────────────┬─────────────────┘
-                 │ run_cleaning() via configs/preprocessing.yaml  │ daily batch slicing via
+                 │ run_cleaning() via configs/preprocessing.yaml  │ daily batches slicing via
                  │ (anomaly_values, new_features)                 │ daily_split_batch_size: 1000
                  ▼                                                ▼
-┌───────────────────────────────────┐            ┌───────────────────────────────────┐
-│     3. PROCESSED LAYER            │            │  • daily_batch/ (day_1..day_N)    │
-│  data/processed/                  │            │  • archived_batches/ (post-retrain│
-│  processed_data.csv               │            │  • predictions/ (inference & perf)│
-│  (Cleaned + Astro Color Features) │            └───────────────────────────────────┘
+┌───────────────────────────────────┐            ┌────────────────────────────────────┐
+│     3. PROCESSED LAYER            │            │  • daily_batches/ (day_1..day_N)   │
+│  data/processed/                  │            │  • archived_batches/ (post-retrain)│
+│  processed_data.csv               │            │  • predictions/ (inference & perf) │
+│  (Cleaned + Astro Color Features) │            └────────────────────────────────────┘
 └───────────────────────────────────┘
 ```
 
@@ -86,8 +86,8 @@ data/
     ├── holdout_dataset.csv                   # Production simulation holdout (20% / 20k rows)
     ├── holdout_dataset_metadata.json         # Holdout partition provenance metadata
     │
-    ├── daily_batch/                          # Active chronological streaming batches
-    │   ├── daily_batch_metadata.json         # Current batch queue state & temporal cursor
+    ├── daily_batches/                        # Active chronological streaming batches
+    │   ├── daily_batches_metadata.json       # Current batch queue state & temporal cursor
     │   ├── day_1.csv ... day_N.csv           # Chronological streaming batches (e.g. 1,000 rows/day)
     │   └── .gitkeep
     │
@@ -167,7 +167,7 @@ data/
 
 This layer emulates an operational telescope survey environment where new data arrives over time, with all operational parameters governed by configuration:
 
-#### Active Streaming Queue (`daily_batch/`)
+#### Active Streaming Queue (`daily_batches/`)
 - Slices the production holdout into sequential batches ordered by `MJD`.
 - **Governing Parameter:** `daily_split_batch_size: 1000` from [`configs/data.yaml`](file:///Users/antoniomartella/Progetti%20GitHub/astro_object_classif/configs/data.yaml).
 - Used by `src.predict.batch_predict` and `src.monitoring` to simulate daily inference workloads.
@@ -178,7 +178,7 @@ This layer emulates an operational telescope survey environment where new data a
 - **Governing Parameters:** Thresholds, drop tolerances, and cooldown windows (`cooldown_batches: 5`) defined in [`configs/monitoring.yaml`](file:///Users/antoniomartella/Progetti%20GitHub/astro_object_classif/configs/monitoring.yaml).
 - When consecutive performance drops or critical data drift triggers a model retraining event:
   1. The batches that triggered the event are consumed.
-  2. Batches are moved from `daily_batch/` to `archived_batches/`.
+  2. Batches are moved from `daily_batches/` to `archived_batches/`.
   3. The retrained model is evaluated against historical benchmarks, respecting the cooldown period (`cooldown_batches`).
 
 #### Predictions & Performance Sink (`predictions/`)
@@ -227,7 +227,7 @@ df_train = pd.read_csv(paths.split_training_path)
 df_processed = pd.read_csv(paths.processed_data)
 
 # Accessing streaming daily batch directory
-batch_dir = paths.split_daily_batch_path
+batch_dir = paths.split_daily_batches_path
 ```
 
 ### Complete Attribute Matrix
