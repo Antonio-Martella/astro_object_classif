@@ -4,7 +4,5 @@
     "train_mjd_max": 57312,
     "split_method": "time_based_MJD",
     "raw_path": "/data/raw/Star_Classification.csv",
-    "training_path": "/data/interim/training_dataset.csv",
-    "current_n_train": 86000,
-    "current_train_mjd_max": 577
+    "training_path": "/data/interim/training_dataset.csv"
 }
