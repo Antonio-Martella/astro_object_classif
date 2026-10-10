@@ -1,0 +1,13 @@
+{
+    "length_dataset": 86000,
+    "columns": [
+        "r",
+        "redshift",
+        "u-g",
+        "g-r",
+        "r-i",
+        "i-z",
+        "field_ID",
+        "class"
+    ]
+}

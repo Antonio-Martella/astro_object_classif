@@ -1,0 +1,6 @@
+{
+    "num_records": 20000,
+    "prod_mjd_min": 57312,
+    "prod_mjd_max": 58932,
+    "production_path": "/data/production/holdout_dataset.csv"
+}

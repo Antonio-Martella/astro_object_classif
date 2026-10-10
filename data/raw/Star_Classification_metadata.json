@@ -1,0 +1,24 @@
+{
+    "path_dataset_kaggle": "fedesoriano/stellar-classification-dataset-sdss17",
+    "dataset_length": 100000,
+    "columns": [
+        "obj_ID",
+        "alpha",
+        "delta",
+        "u",
+        "g",
+        "r",
+        "i",
+        "z",
+        "run_ID",
+        "rerun_ID",
+        "cam_col",
+        "field_ID",
+        "spec_obj_ID",
+        "class",
+        "redshift",
+        "plate",
+        "MJD",
+        "fiber_ID"
+    ]
+}
