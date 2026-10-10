@@ -1,6 +1,6 @@
 {
     "number_file": 6,
-    "number_records": 6000,
+    "number_records": 600,
     "archived_batch_files": [
         "day_1.csv",
         "day_2.csv",
