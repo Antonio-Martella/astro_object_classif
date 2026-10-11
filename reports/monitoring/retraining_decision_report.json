@@ -1,0 +1,217 @@
+{
+    "day_1.csv": {
+        "performance": {
+            "triggered": false,
+            "consecutive_critical_count": 1,
+            "is_catastrophic": false,
+            "reason": "🟡 f1_weighted critical: 1/3 (drop of 4.74%)"
+        },
+        "drift": {
+            "triggered": true,
+            "drift_ratio": 0.6667,
+            "drifted_features_count": 4,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g",
+                "i-z"
+            ],
+            "prediction_drift_detected": false,
+            "target_drift_detected": false,
+            "reason": "🔴 Feature drift detected: 4/6 features drifted (66.67% >= 50.00%) -> TRIGGERED"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": false,
+            "action": "NO_ACTION",
+            "primary_trigger": null,
+            "reason": "🟢 Performance healthy, but feature drift detected (monitoring)."
+        }
+    },
+    "day_2.csv": {
+        "performance": {
+            "triggered": false,
+            "consecutive_critical_count": 0,
+            "is_catastrophic": false,
+            "reason": "🟢 OK"
+        },
+        "drift": {
+            "triggered": true,
+            "drift_ratio": 0.6667,
+            "drifted_features_count": 4,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g",
+                "g-r"
+            ],
+            "prediction_drift_detected": true,
+            "target_drift_detected": true,
+            "reason": "🔴 Feature drift detected: 4/6 features drifted (66.67% >= 50.00%) -> TRIGGERED"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": false,
+            "action": "NO_ACTION",
+            "primary_trigger": null,
+            "reason": "🟢 Performance healthy, but feature drift detected (monitoring)."
+        }
+    },
+    "day_3.csv": {
+        "performance": {
+            "triggered": false,
+            "consecutive_critical_count": 0,
+            "is_catastrophic": false,
+            "reason": "🟢 OK"
+        },
+        "drift": {
+            "triggered": true,
+            "drift_ratio": 0.6667,
+            "drifted_features_count": 4,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g",
+                "g-r"
+            ],
+            "prediction_drift_detected": true,
+            "target_drift_detected": true,
+            "reason": "🔴 Feature drift detected: 4/6 features drifted (66.67% >= 50.00%) -> TRIGGERED"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": false,
+            "action": "NO_ACTION",
+            "primary_trigger": null,
+            "reason": "🟢 Performance healthy, but feature drift detected (monitoring)."
+        }
+    },
+    "day_4.csv": {
+        "performance": {
+            "triggered": false,
+            "consecutive_critical_count": 0,
+            "is_catastrophic": false,
+            "reason": "🟢 OK"
+        },
+        "drift": {
+            "triggered": false,
+            "drift_ratio": 0.5,
+            "drifted_features_count": 3,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g"
+            ],
+            "prediction_drift_detected": true,
+            "target_drift_detected": true,
+            "reason": "🟢 OK"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": false,
+            "action": "NO_ACTION",
+            "primary_trigger": null,
+            "reason": "🟢 All systems normal"
+        }
+    },
+    "day_5.csv": {
+        "performance": {
+            "triggered": false,
+            "consecutive_critical_count": 0,
+            "is_catastrophic": false,
+            "reason": "🟢 OK"
+        },
+        "drift": {
+            "triggered": true,
+            "drift_ratio": 0.6667,
+            "drifted_features_count": 4,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g",
+                "g-r"
+            ],
+            "prediction_drift_detected": true,
+            "target_drift_detected": true,
+            "reason": "🔴 Feature drift detected: 4/6 features drifted (66.67% >= 50.00%) -> TRIGGERED"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": false,
+            "action": "NO_ACTION",
+            "primary_trigger": null,
+            "reason": "🟢 Performance healthy, but feature drift detected (monitoring)."
+        }
+    },
+    "day_6.csv": {
+        "performance": {
+            "triggered": true,
+            "consecutive_critical_count": 1,
+            "is_catastrophic": true,
+            "reason": "🔴🔴🔴 Catastrophic drop f1_weighted (12.02%) -> TRIGGERED"
+        },
+        "drift": {
+            "triggered": true,
+            "drift_ratio": 0.6667,
+            "drifted_features_count": 4,
+            "total_features_count": 6,
+            "drifted_features": [
+                "r",
+                "redshift",
+                "u-g",
+                "g-r"
+            ],
+            "prediction_drift_detected": false,
+            "target_drift_detected": false,
+            "reason": "🔴 Feature drift detected: 4/6 features drifted (66.67% >= 50.00%) -> TRIGGERED"
+        },
+        "cooldown": {
+            "in_cooldown": false,
+            "batches_since_last_retraining": null,
+            "remaining_cooldown_batches": 0,
+            "last_retraining_batch": null,
+            "reason": "🟢 Cooldown inactive"
+        },
+        "decision": {
+            "retraining": true,
+            "action": "RETRAINING",
+            "primary_trigger": "PERFORMANCE_CATASTROPHIC",
+            "reason": "🔴 Catastrophic drop in performance, retraining required."
+        }
+    }
+}
