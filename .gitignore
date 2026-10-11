@@ -10,8 +10,8 @@ logs/optimization/*
 models/**/*.pkl
 
 # report/
-report/**/*.png
-report/**/*.json
+reports/**/*.png
+reports/**/*.json
 
 .pytest_cache/
 .ruff_cache/
