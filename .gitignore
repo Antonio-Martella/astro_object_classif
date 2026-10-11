@@ -3,23 +3,30 @@ data/**/*.csv
 data/**/*.json
 
 # logs/
-logs/*.log
+logs/**/*.log
 logs/optimization/*
 #!logs/optimization/.gitkeep
 
+# models/
 models/**/*.pkl
 
-*.DS_Store
+# report/
+report/**/*.png
+report/**/*.json
 
-#saved_models/*.pkl
-__pycache__/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 mlruns/
 mlflow.db
 mlflow.db.backup
-*.log
+
 venv/
-.env
-.ruff_cache
-.mypy_cache
+
+
 catboost_info/
+
+
+*.DS_Store
+*__pycache__/
