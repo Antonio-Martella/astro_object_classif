@@ -39,30 +39,20 @@ class DataPathConfig:
 
     # Daily batches for monitoring & streaming inference
     split_daily_batches_path: Path = production_dir / "daily_batches"
-    split_daily_batches_metadata_path: Path = (
-        split_daily_batches_path / "daily_batches_metadata.json"
-    )
+    split_daily_batches_metadata_path: Path = split_daily_batches_path / "daily_batches_metadata.json"
 
     # Archived daily batches after retraining triggers
     split_archived_batches_path: Path = production_dir / "archived_batches"
-    split_archived_batches_metadata_path: Path = (
-        split_archived_batches_path / "archived_batches_metadata.json"
-    )
+    split_archived_batches_metadata_path: Path = split_archived_batches_path / "archived_batches_metadata.json"
 
     # Holdout batch full predictions & evaluation metrics
-    holdout_dataset_predicted: Path = (
-        production_dir / "predictions" / "holdout_pred.csv"
-    )
-    holdout_dataset_metrics: Path = (
-        production_dir / "predictions" / "holdout_pred_metrics.json"
-    )
+    holdout_dataset_predicted: Path = production_dir / "predictions" / "holdout_pred.csv"
+    holdout_dataset_metrics: Path = production_dir / "predictions" / "holdout_pred_metrics.json"
 
     # --- 1.4 Processed Data (Cleaned and preprocessed for training) ---
     processed_dir: Path = DATA_DIR / "processed"
     processed_data: Path = processed_dir / "processed_data.csv"
-    processed_data_metadata: Path = (
-        processed_dir / "processed_data_metadata.json"
-    )
+    processed_data_metadata: Path = processed_dir / "processed_data_metadata.json"
 
     # =========================================================================
     # 2. CONFIGURATION LAYER (configs/)
@@ -89,18 +79,10 @@ class DataPathConfig:
     # =========================================================================
     # 3. SERIALIZED MODELS & ARTIFACTS (models/)
     # =========================================================================
-    cleaner_pipeline: Path = (
-        MODELS_DIR / "cleaner pipeline" / "cleaner_pipeline.pkl"
-    )
-    target_le: Path = (
-        MODELS_DIR / "target_label_encoder" / "target_encoder.pkl"
-    )
-    pipeline_best_model: Path = (
-        MODELS_DIR / "best_model" / "pipeline_best_model.pkl"
-    )
-    custom_model_pipeline: Path = (
-        MODELS_DIR / "custom_model" / "custom_model_pipeline.pkl"
-    )
+    cleaner_pipeline: Path = MODELS_DIR / "cleaner pipeline" / "cleaner_pipeline.pkl"
+    target_le: Path = MODELS_DIR / "target_label_encoder" / "target_encoder.pkl"
+    pipeline_best_model: Path = MODELS_DIR / "best_model" / "pipeline_best_model.pkl"
+    custom_model_pipeline: Path = MODELS_DIR / "custom_model" / "custom_model_pipeline.pkl"
 
     # =========================================================================
     # 4. TRACKING, REPORTS & EVALUATION (reports/ & mlflow.db)
@@ -110,21 +92,15 @@ class DataPathConfig:
     # Best model evaluation & figures
     best_model: Path = REPORTS_DIR / "best_model"
     best_model_metrics: Path = best_model / "best_model_metrics.json"
-    best_model_hyperparameters: Path = (
-        best_model / "best_model_iperparameters.json"
-    )
+    best_model_hyperparameters: Path = best_model / "best_model_iperparameters.json"
 
     # Custom model metrics
     custom_model_dir: Path = REPORTS_DIR / "custom_model"
-    custom_model_metrics: Path = (
-        custom_model_dir / "custom_model_metric.json"
-    )
+    custom_model_metrics: Path = custom_model_dir / "custom_model_metric.json"
 
     # Monitoring reports (data drift, model performance, retraining triggers)
     monitoring_reports_dir: Path = REPORTS_DIR / "monitoring"
-    retraining_decision_report: Path = (
-        monitoring_reports_dir / "retraining_decision_report.json"
-    )
+    retraining_decision_report: Path = monitoring_reports_dir / "retraining_decision_report.json"
 
     # =========================================================================
     # 5. LOGGING LAYER (logs/)
