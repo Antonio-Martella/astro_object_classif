@@ -92,7 +92,7 @@ class DataPathConfig:
     # Best model evaluation & figures
     best_model: Path = REPORTS_DIR / "best_model"
     best_model_metrics: Path = best_model / "best_model_metrics.json"
-    best_model_hyperparameters: Path = best_model / "best_model_iperparameters.json"
+    best_model_hyperparameters: Path = best_model / "best_model_hyperparameters.json"
 
     # Custom model metrics
     custom_model_dir: Path = REPORTS_DIR / "custom_model"
