@@ -80,7 +80,7 @@ class DataPathConfig:
     # 3. SERIALIZED MODELS & ARTIFACTS (models/)
     # =========================================================================
     cleaner_pipeline: Path = MODELS_DIR / "cleaner pipeline" / "cleaner_pipeline.pkl"
-    target_le: Path = MODELS_DIR / "target_label_encoder" / "target_encoder.pkl"
+    target_le: Path = MODELS_DIR / "target_label_encoder" / "target_label_encoder.pkl"
     pipeline_best_model: Path = MODELS_DIR / "best_model" / "pipeline_best_model.pkl"
     custom_model_pipeline: Path = MODELS_DIR / "custom_model" / "custom_model_pipeline.pkl"
 
