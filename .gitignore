@@ -5,7 +5,6 @@ data/**/*.json
 # logs/
 logs/**/*.log
 logs/optimization/*
-#!logs/optimization/.gitkeep
 
 # models/
 models/**/*.pkl
