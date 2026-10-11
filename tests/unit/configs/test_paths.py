@@ -145,6 +145,7 @@ class TestDataPathConfig:
             "best_model_metrics",
             "best_model_hyperparameters",
             "custom_model_metrics",
+            "custom_model_hyperparameters",
             "retraining_decision_report",
         ],
     )
