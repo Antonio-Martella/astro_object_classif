@@ -94,9 +94,10 @@ class DataPathConfig:
     best_model_metrics: Path = best_model / "best_model_metrics.json"
     best_model_hyperparameters: Path = best_model / "best_model_hyperparameters.json"
 
-    # Custom model metrics
+    # Custom model metrics and hyperparameters
     custom_model_dir: Path = REPORTS_DIR / "custom_model"
     custom_model_metrics: Path = custom_model_dir / "custom_model_metrics.json"
+    custom_model_hyperparameters: Path = custom_model_dir / "custom_model_hyperparameters.json"
 
     # Monitoring reports (data drift, model performance, retraining triggers)
     monitoring_reports_dir: Path = REPORTS_DIR / "monitoring"
