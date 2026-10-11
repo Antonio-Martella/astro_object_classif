@@ -96,7 +96,7 @@ class DataPathConfig:
 
     # Custom model metrics
     custom_model_dir: Path = REPORTS_DIR / "custom_model"
-    custom_model_metrics: Path = custom_model_dir / "custom_model_metric.json"
+    custom_model_metrics: Path = custom_model_dir / "custom_model_metrics.json"
 
     # Monitoring reports (data drift, model performance, retraining triggers)
     monitoring_reports_dir: Path = REPORTS_DIR / "monitoring"
