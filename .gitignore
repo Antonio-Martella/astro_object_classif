@@ -1,9 +1,15 @@
+# data/
 data/**/*.csv
 data/**/*.json
 
+# logs/
 logs/*.log
+logs/optimization/*
+#!logs/optimization/.gitkeep
 
-.DS_Store
+models/**/*.pkl
+
+*.DS_Store
 
 #saved_models/*.pkl
 __pycache__/
