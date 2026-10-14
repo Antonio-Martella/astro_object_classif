@@ -1,10 +1,11 @@
-from .batch_predict import run_batch_prediction
-from .predict import AstroPredict
-from .streaming_predict import predict_single_instance, run_simulation_streaming
+from .batch_predict import run_prediction, full_dataset_predict, batch_dataset_prediction
+from .predictor import AstroPredict
+from .streaming_predict import run_single_prediction
 
 __all__ = [
     "AstroPredict",
-    "run_simulation_streaming",
-    "predict_single_instance",
-    "run_batch_prediction",
+    "run_single_prediction",
+    "run_prediction",
+    "full_dataset_predict",
+    "batch_dataset_prediction",
 ]

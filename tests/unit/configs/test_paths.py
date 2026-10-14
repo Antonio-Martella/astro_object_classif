@@ -14,7 +14,7 @@ from configs.paths import (
 
 class TestDataPathConfig:
     """
-    Unit test suite to verify the integrity and behavior of DataPathConfig. 
+    Unit test suite to verify the integrity and behavior of DataPathConfig.
 
     Ensures configuration immutability, the existence and validity of
     main paths and subfolders, as well as the accuracy of log files,
@@ -151,7 +151,7 @@ class TestDataPathConfig:
     )
     def test_presence_path_in_data_configs(self, paths, paths_configs):
         """
-        Verifies the presence of dataset/artifact attributes 
+        Verifies the presence of dataset/artifact attributes
         and the validity of the extensions (.csv, .json, .db, .pkl)
         """
         assert hasattr(paths_configs, paths)

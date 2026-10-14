@@ -1,9 +1,12 @@
 import logging
 
 import joblib
+import json
 import mlflow
 import numpy as np
 import pandas as pd
+from typing import Any
+
 from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn import set_config
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -13,8 +16,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 
 from configs.paths import PROJECT_ROOT, DataPathConfig
-from configs.schemas import CleanPreprocessingConfig, PreprocessingConfig
-from configs.schemas_loader import load_cleaning_preprocessing_config, load_preprocessing_config
+from configs.pipeline_config import CleanPreprocessingConfig, PreprocessingConfig
+from configs.pipeline_loader import load_cleaning_preprocessing_config, load_preprocessing_config
 from src.features.build_features import AstroFeatureEngineer
 from src.utils.validate_type import validate_type
 
@@ -32,8 +35,8 @@ class FeaturesDrop(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     - **features_config** : **PreprocessingConfig**
-        Configuration object containing the list of columns to drop through
-        the attribute `columns_to_drop`.
+        Configuration object containing the list of columns to hold through
+        the attribute `columns_to_hold`.
 
     Methods
     -------
@@ -46,32 +49,52 @@ class FeaturesDrop(BaseEstimator, TransformerMixin):
     Raises
     ------
     **ValueError**
-        If one or more columns defined in `columns_to_drop`
+        If one or more columns defined in `columns_to_hold`
         are not present in the input dataframe.
     """
 
-    def __init__(self, clean_prepr_config: CleanPreprocessingConfig):
-        self.clean_prepr_config = clean_prepr_config
+    def __init__(self, clean_prepr_config: CleanPreprocessingConfig | None = None, verbose: bool = True) -> None:
+        validate_type(
+            clean_prepr_config=(clean_prepr_config, (CleanPreprocessingConfig, type(None))), 
+            verbose=(verbose, bool)
+        )
+        self.clean_prepr_config = CleanPreprocessingConfig() if clean_prepr_config is None else clean_prepr_config
+        self.verbose = verbose
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y = None):
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, type(None))
+        )
         self.is_fitted_ = True
         return self
 
     def __sklearn_is_fitted__(self) -> bool:
         return True
 
-    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame, y = None) -> pd.DataFrame:
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, (pd.Series, type(None))),
+        )
+
         X_copy = X.copy()
 
-        if not all(x in X_copy.columns for x in self.clean_prepr_config.columns_to_drop):
+        if not all(x in X_copy.columns for x in self.clean_prepr_config.columns_to_hold):
             raise ValueError(
-                "Please note that not all columns defined in 'columns_to_drop' (configs/params.yaml)",
-                "are present in the dataset!",
+                "Please note that not all columns defined in 'columns_to_hold' (configs/params.yaml)" \
+                " are present in the dataset!"
             )
 
-        X_copy = X_copy.drop(labels=self.clean_prepr_config.columns_to_drop, axis=1)
+        for column in X_copy.columns:
+            if (
+                str(column) not in list(self.clean_prepr_config.columns_to_hold) and 
+                str(column) not in ["class", "field_ID"]
+            ):
+                X_copy = X_copy.drop(labels=column, axis=1)
 
-        logger.info("Dataset features dropped successfully!")
+        if self.verbose:
+            logger.info("Dataset features dropped successfully!")
 
         return X_copy
 
@@ -111,22 +134,36 @@ class AnomalyHandler(BaseEstimator, TransformerMixin):
         Cleaned dataframe with anomaly values replaced by NaN.
     """
 
-    def __init__(self, clean_prepr_config: CleanPreprocessingConfig):
-        self.clean_prepr_config = clean_prepr_config
+    def __init__(self, clean_prepr_config: CleanPreprocessingConfig | None = None, verbose: bool = True):
+        validate_type(
+            clean_prepr_config=(clean_prepr_config, (CleanPreprocessingConfig, type(None))), 
+            verbose=(verbose, bool)
+        )
+        self.clean_prepr_config = CleanPreprocessingConfig() if clean_prepr_config is None else clean_prepr_config
+        self.verbose = verbose
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame, y = None):
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, type(None))
+        )
         self.is_fitted_ = True
         return self
 
     def __sklearn_is_fitted__(self) -> bool:
         return True
 
-    def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
+    def transform(self, X: pd.DataFrame, y = None) -> pd.DataFrame:
+        validate_type(
+            X=(X, pd.DataFrame),
+            y=(y, type(None)),
+        )
         X_copy = X.copy()
 
         for value in self.clean_prepr_config.anomaly_values:
             X_copy = X_copy.replace(value, np.nan)
-            logger.info(f"Replaced anomaly value {value} with NaN.")
+            if self.verbose:
+                logger.info(f"Replaced anomaly value {value} with NaN.")
 
         return X_copy
 
@@ -160,23 +197,36 @@ class ProcessedDataSaver:
     - reproducible ML data pipelines
     """
 
-    def __init__(self, path_config: DataPathConfig):
-        self.path_config = path_config
+    def __init__(self, path_config: DataPathConfig | None = None, verbose: bool = True) -> None:
+        validate_type(path_config=(path_config, (DataPathConfig, type(None))), verbose=(verbose, bool))
+        self.path_config = DataPathConfig if path_config is None else path_config
+        self.verbose = verbose
 
     def save(self, df: pd.DataFrame) -> None:
+        validate_type(df=(df, pd.DataFrame))
+        self.path_config.processed_data.parent.mkdir(parents=True, exist_ok=True)
+
         df_processed = df.copy()
+        df_processed.to_csv(self.path_config.processed_data, index=False)
 
-        self.path_config.processed_data_path.parent.mkdir(parents=True, exist_ok=True)
+        metadata = {}
+        metadata["length_dataset"] = len(df_processed)
+        metadata["columns"] = df_processed.columns.to_list()
 
-        df_processed.to_csv(self.path_config.processed_data_path, index=False)
+        with open(self.path_config.processed_data_metadata, "w", encoding="utf-8") as file:
+            json.dump(metadata, file, indent=4)
 
-        logger.info(
-            f"Processed dataset successfully saved to: {self.path_config.processed_data_path.relative_to(PROJECT_ROOT)}"
-        )
-        logger.info(f"Final shape of the saved dataset: {df_processed.shape}")
+        if self.verbose:
+            logger.info(
+                f"Processed dataset successfully saved to: {self.path_config.processed_data.relative_to(PROJECT_ROOT)}"
+            )
+            logger.info(f"Final shape of the saved dataset: {df_processed.shape}")
 
 
-def build_stateless_cleaning_pipeline(clean_prepr_config: CleanPreprocessingConfig) -> Pipeline:
+def build_stateless_cleaning_pipeline(
+    clean_prepr_config: CleanPreprocessingConfig | None = None, 
+    verbose: bool = True,
+) -> Pipeline:
     """
     Builds a full sklearn preprocessing pipeline for astronomical classification tasks.
 
@@ -211,14 +261,19 @@ def build_stateless_cleaning_pipeline(clean_prepr_config: CleanPreprocessingConf
     sklearn.pipeline.Pipeline
         Fully composed preprocessing pipeline ready for fit/transform usage.
     """
+    validate_type(
+        clean_prepr_config=(clean_prepr_config, (CleanPreprocessingConfig, type(None))), 
+        verbose=(verbose, bool),
+    )
+    clean_prepr_config = load_cleaning_preprocessing_config() if clean_prepr_config is None else clean_prepr_config
 
     set_config(transform_output="pandas")
 
     pipeline = ImbPipeline(
         steps=[
-            ("anomaly_handler", AnomalyHandler(clean_prepr_config=clean_prepr_config)),
-            ("features_engineer", AstroFeatureEngineer(clean_prepr_config=clean_prepr_config)),
-            ("dropper", FeaturesDrop(clean_prepr_config=clean_prepr_config)),
+            ("anomaly_handler", AnomalyHandler(clean_prepr_config=clean_prepr_config, verbose=verbose)),
+            ("features_engineer", AstroFeatureEngineer(clean_prepr_config=clean_prepr_config, verbose=verbose)),
+            ("dropper", FeaturesDrop(clean_prepr_config=clean_prepr_config, verbose=verbose)),
         ]
     )
 
@@ -229,7 +284,7 @@ class ScalarFactory:
     _registry = {"standard": StandardScaler(), "robust": RobustScaler(), "minmax": MinMaxScaler()}
 
     @classmethod
-    def get_scaler(cls, scaler_name: str):
+    def get_scaler(cls, scaler_name: str) -> dict[str, Any]:
         if scaler_name.lower() not in cls._registry.keys():
             raise ValueError(f"Scaler '{scaler_name}' not Supported!" f"Choose between: {list(cls._registry.keys())}")
 
@@ -266,9 +321,10 @@ def build_stateful_ml_pipeline(prep_config: PreprocessingConfig | None, scaler_s
         Fully composed preprocessing pipeline ready for fit/transform usage.
     """
 
-    set_config(transform_output="pandas")
-
     validate_type(prep_config=(prep_config, (PreprocessingConfig, type(None))), scaler_strategy=(scaler_strategy, str))
+    prep_config = PreprocessingConfig() if prep_config is None else prep_config
+
+    set_config(transform_output="pandas")
 
     if prep_config is None:
         prep_config = load_preprocessing_config()
@@ -314,7 +370,7 @@ if __name__ == "__main__":
         X_processed = cleaning_pipeline.fit_transform(X)
         mlflow.log_params(
             {
-                "dropped_columns": prep_config.columns_to_drop,
+                "hold_columns": prep_config.columns_to_hold,
                 "remaining_columns": [X_processed.columns.tolist(), "class"],
             }
         )

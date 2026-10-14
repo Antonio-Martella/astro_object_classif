@@ -1,14 +1,14 @@
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
 
-from configs.random_seed_loader import load_random_seed_config
+from configs.pipeline_loader import load_random_seed_config
 
 
 class ResamplerFactory:
     _registry = {
         "smote": SMOTE,
         "undersampling": RandomUnderSampler,
-        "class_weight": None,  # <-- Metto 'None' poiché i modelli di default hanno class_weight = 'balanced'
+        "class_weight": None,  # <-- I'm setting it to 'None' because the default models have class_weight = 'balanced'
     }
 
     @classmethod
@@ -16,7 +16,7 @@ class ResamplerFactory:
         strategy = strategy_name
 
         if strategy not in cls._registry:
-            raise ValueError(f"Strategia applicata per il resempling '{strategy}' non valida!")
+            raise ValueError(f"Strategia applicata per il simile a '{strategy}' non valida!")
 
         resampler_class = cls._registry[strategy]
 

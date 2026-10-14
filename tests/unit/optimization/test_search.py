@@ -7,7 +7,7 @@ from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.dummy import DummyClassifier
 
 from configs.paths import DataPathConfig
-from configs.tuning_config import TuningConfigLoader
+from configs.optuna_config import OptunaConfigLoader
 from src.optimization.search import (
     _generate_reports_step,
     _log_experiment_result,
@@ -54,10 +54,10 @@ def mock_path_config(tmp_path):
 
     config.cleaner_pipeline = tmp_path / "models" / "cleaner_pipeline.pkl"
     config.target_le = tmp_path / "models" / "target_encoder.pkl"
-    config.pipeline_best_model = tmp_path / "models" / "best_model" / "pipeline_best_model.pkl"
+    config.best_model_pipeline = tmp_path / "models" / "best_model" / "best_model_pipeline.pkl"
 
     config.optuna_config = tmp_path / "configs" / "optuna.yaml"
-    config.params_config = tmp_path / "configs" / "params.yaml"
+    #config.params_config = tmp_path / "configs" / "params.yaml"
     config.randomseed_config = tmp_path / "configs" / "random_seed.yaml"
 
     # Search spaces
@@ -78,7 +78,7 @@ def mock_path_config(tmp_path):
 
     config.optuna_config.parent.mkdir(parents=True, exist_ok=True)
     config.optuna_config.write_text("name: test")
-    config.params_config.write_text("params: test")
+    #config.params_config.write_text("params: test")
 
     config.random_forest_search_space.parent.mkdir(parents=True, exist_ok=True)
     config.random_forest_search_space.write_text("space: test")
@@ -95,10 +95,10 @@ def mock_path_config(tmp_path):
 @pytest.fixture
 def mock_tuning_config():
     """
-    Mock della vera classe TuningConfigLoader che riflette sia
+    Mock della vera classe OptunaConfigLoader che riflette sia
     self.optuna_config sia il metodo get_search_space().
     """
-    config = MagicMock(spec=TuningConfigLoader)
+    config = MagicMock(spec=OptunaConfigLoader)
 
     config.optuna_config = {
         "name_experiment": "Astro_Object_Classification",
@@ -193,7 +193,7 @@ def test_train_final_model_step(mock_train_eval, dummy_data, mock_path_config, d
 
     assert scores["f1"] == 0.95
     assert mock_path_config.best_model_metrics.exists()
-    assert mock_path_config.pipeline_best_model.exists()
+    assert mock_path_config.best_model_pipeline.exists()
 
 
 @patch("src.optimization.search.confusion_matrix_imag")
