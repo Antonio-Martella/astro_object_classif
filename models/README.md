@@ -25,18 +25,18 @@ This directory serves as the local **Model Registry & Pipeline Storage Layer** f
 In modern MLOps architectures, models are rarely serialized as standalone estimators. Instead, they are packaged as **composite pipelines** that bundle feature scalers, resampling strategies, and the estimator together into a single atomic artifact. This prevents **training-serving skew** and guarantees that transformations applied during training are identically replicated at inference time.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            PIPELINE GENERATION                              │
-│       src/data/preprocessing.py │ src/optimization/search.py │ src/training/train.py
-└──────────────────┬──────────────────────────┬───────────────────────┬───────┘
-                   │                          │                       │
-                   ▼                          ▼                       ▼
-┌──────────────────────────────┐ ┌──────────────────────────┐ ┌───────────────┐
-│   models/cleaner pipeline/   │ │    models/best_model/    │ │models/custom_ │
-│   • cleaner_pipeline.pkl     │ │ • pipeline_best_model.pkl│ │    model/     │
-│  (Data Cleaning & Anomalies) │ │ (Optuna Champion Model)  │ │• custom_model_│
-└──────────────────────────────┘ └────────────┬─────────────┘ │  pipeline.pkl │
-                                              │               └───────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                    PIPELINE GENERATION                           │
+│  src/data/preprocessing.py │ src/optimization/search.py │ src/training/train.py  │
+└──────────────┬──────────────────────────────┬───────────────────────────┬────────┘
+               │                              │                           │
+               ▼                              ▼                           ▼
+┌──────────────────────────────┐ ┌──────────────────────────┐ ┌───────────────────────────┐
+│   models/cleaner_pipeline/   │ │    models/best_model/    │ │ models/custom_model/      │
+│   • cleaner_pipeline.pkl     │ │ • best_model_pipeline.pkl│ │• custom_model_pipeline.pkl│
+│  (Data Cleaning & Anomalies) │ │ (Optuna Champion Model)  │ └───────────────────────────┘
+└──────────────────────────────┘ └────────────┬─────────────┘ 
+                                              │               
                                               ▼
                                ┌─────────────────────────────┐
                                │     INFERENCE & SERVING     │
@@ -59,11 +59,11 @@ models/
 ├── README.md                                  # Subsystem documentation and operational guide
 ├── best_model/                                # Champion model artifacts (Optuna HPO outcome)
 │   ├── .gitkeep                               # Structure tracking in version control
-│   └── pipeline_best_model.pkl                # Fully fitted champion pipeline (Scaler + Model)
+│   └── best_model_pipeline.pkl                # Fully fitted champion pipeline (Scaler + Model)
 ├── custom_model/                              # Baseline / interactive training artifacts
 │   ├── .gitkeep                               # Structure tracking in version control
 │   └── custom_model_pipeline.pkl              # Fitted experimental pipeline
-├── cleaner pipeline/                          # Data cleaning & anomaly treatment pipeline
+├── cleaner_pipeline/                          # Data cleaning & anomaly treatment pipeline
 │   ├── .gitkeep                               # Structure tracking in version control
 │   └── cleaner_pipeline.pkl                   # Fitted cleaning transformer
 └── target_label_encoder/                      # Astronomical class encoder
@@ -77,9 +77,8 @@ models/
 
 ### 3.1 Champion Model Pipeline (`models/best_model/`)
 
-Contains the **Champion Model** (`pipeline_best_model.pkl`), selected after completing the multi-trial Optuna Hyperparameter Optimization study:
-
-* **Artifact:** `pipeline_best_model.pkl` (~73 MB)
+Contains the **Champion Model** (`best_model_pipeline.pkl`), selected after completing the multi-trial Optuna Hyperparameter Optimization study runs via `python main.py --mode training`:
+* **Artifact:** `best_model_pipeline.pkl` (~73 MB)
 * **Pipeline Structure:** An `imblearn.pipeline.Pipeline` or `sklearn.pipeline.Pipeline` consisting of:
   1. **Resampling Step:** Optional balancing strategy (e.g., RandomUnderSampler or SMOTE).
   2. **Scaler Step:** RobustScaler or StandardScaler tuned to photometric features.
@@ -99,7 +98,7 @@ Stores models produced during manual, interactive training runs via `python main
 
 ---
 
-### 3.3 Data Cleaning & Transformation Pipeline (`models/cleaner pipeline/`)
+### 3.3 Data Cleaning & Transformation Pipeline (`models/cleaner_pipeline/`)
 
 Stores the fitted data preprocessing and anomaly cleaning pipeline:
 
@@ -137,7 +136,7 @@ from configs.paths import DataPathConfig
 paths = DataPathConfig()
 
 # Champion Pipeline
-print(paths.pipeline_best_model)      # .../models/best_model/pipeline_best_model.pkl
+print(paths.best_model_pipeline)      # .../models/best_model/best_model_pipeline.pkl
 
 # Custom / Baseline Pipeline
 print(paths.custom_model_pipeline)    # .../models/custom_model/custom_model_pipeline.pkl
@@ -157,17 +156,35 @@ All artifacts are persisted using Python's [`joblib`](https://joblib.readthedocs
 
 ```python
 import joblib
+import pandas as pd
+from sklearn import set_config
 from configs.paths import DataPathConfig
+
+set_config(transform_output="pandas")
 
 paths = DataPathConfig()
 
-# Saving an artifact
-paths.pipeline_best_model.parent.mkdir(parents=True, exist_ok=True)
-joblib.dump(fitted_pipeline, paths.pipeline_best_model)
+# 1. Loading the Champion model and the Label Encoder
+pipeline = joblib.load(paths.best_model_pipeline)
+label_encoder = joblib.load(paths.target_le)
 
-# Loading an artifact for inference
-loaded_pipeline = joblib.load(paths.pipeline_best_model)
-predictions = loaded_pipeline.predict(X_new)
+# 2. Real photometric sample with the 6 features required by the model
+# (SDSS observation: r-band magnitude, redshift, and color indices)
+sample_observation = pd.DataFrame([{
+    "r": 17.55,
+    "redshift": 0.045,
+    "u-g": 1.25,
+    "g-r": 0.85,
+    "r-i": 0.40,
+    "i-z": 0.30,
+}])
+
+# 3. Prediction and decoding of the astronomical label
+pred_encoded = pipeline.predict(sample_observation)
+pred_class = label_encoder.inverse_transform(pred_encoded)
+
+print(f"Predicted astronomical class: {pred_class[0]}")
+# Expected output: Predicted astronomical class: GALAXY
 ```
 
 ---
@@ -176,7 +193,7 @@ predictions = loaded_pipeline.predict(X_new)
 
 | Artifact | Producer Script / Stage | Trigger Command | Primary Consumer |
 | :--- | :--- | :--- | :--- |
-| **`pipeline_best_model.pkl`** | `src/optimization/search.py` | `python main.py --mode optimize` | `src/predict/predictor.py`, MLflow Registry |
+| **`best_model_pipeline.pkl`** | `src/optimization/search.py` | `python main.py --mode optimize` | `src/predict/predictor.py`, MLflow Registry |
 | **`custom_model_pipeline.pkl`** | `src/training/train.py` | `python main.py --mode training` | Comparative evaluation, MLflow Staging |
 | **`cleaner_pipeline.pkl`** | `src/data/preprocessing.py` | `python main.py --mode make_dataset` | `src/data/make_datasets.py`, Data Pipelines |
 | **`target_label_encoder.pkl`** | `src/training/data.py` | Training / Optimization runs | `src/predict/predictor.py`, `src/monitoring/` |
@@ -194,7 +211,7 @@ predictions = loaded_pipeline.predict(X_new)
      models/**/*.pkl
      ```
 2. **Directory Preservation via `.gitkeep`:**
-   * Every subfolder (`best_model/`, `custom_model/`, `cleaner pipeline/`, `target_label_encoder/`) contains a tracked `.gitkeep` file.
+   * Every subfolder (`best_model/`, `custom_model/`, `cleaner_pipeline/`, `target_label_encoder/`) contains a tracked `.gitkeep` file.
    * This guarantees that cloned repositories and CI/CD environments possess the complete directory hierarchy before pipeline execution.
 3. **Model Versioning & Centralized Tracking (MLflow):**
    * Production versioning is handled outside Git via **MLflow Model Registry** (`mlflow.db`).
