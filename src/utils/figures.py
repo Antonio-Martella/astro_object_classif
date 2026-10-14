@@ -12,10 +12,10 @@ from configs.paths import DataPathConfig
 path_config = DataPathConfig()
 
 
-def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, label_condoer: LabelEncoder, save_path: Path) -> None:
+def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, label_encoder: LabelEncoder, save_path: Path) -> None:
     if any(isinstance(x, int) for x in y_true) and any(isinstance(x, int) for x in y_pred):
-        y_true = label_condoer.inverse_transform(y_true)
-        y_pred = label_condoer.inverse_transform(y_pred)
+        y_true = label_encoder.inverse_transform(y_true)
+        y_pred = label_encoder.inverse_transform(y_pred)
     elif (
         any(isinstance(x, int) for x in y_true)
         and any(not isinstance(x, int) for x in y_pred)
@@ -24,11 +24,11 @@ def confusion_matrix_imag(y_true: pd.Series, y_pred: pd.Series, label_condoer: L
     ):
         raise ValueError("Attenzione il formato di y_true e y_pred non coincidono!")
 
-    cm = confusion_matrix(y_true, y_pred, labels=label_condoer.classes_)
+    cm = confusion_matrix(y_true, y_pred, labels=label_encoder.classes_)
 
     plt.figure(figsize=(6, 5))
     sns.heatmap(
-        cm, annot=True, cmap="coolwarm", xticklabels=label_condoer.classes_, yticklabels=label_condoer.classes_, fmt="d"
+        cm, annot=True, cmap="coolwarm", xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_, fmt="d"
     )
 
     plt.xlabel("Predicted")

@@ -4,8 +4,8 @@ import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
 
 from configs.paths import DataPathConfig
-from configs.schemas import SplitTrainingConfig
-from configs.schemas_loader import load_split_training_config
+from configs.pipeline_config import SplitTrainingConfig
+from configs.pipeline_loader import load_split_training_config
 from src.utils.validate_type import validate_type
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def _load_dataset(data_path: DataPathConfig) -> pd.DataFrame:
     validate_type(data_path=(data_path, DataPathConfig))
-    return pd.read_csv(data_path.processed_data_path)
+    return pd.read_csv(data_path.processed_data)
 
 
 def _define_features_target(df: pd.DataFrame, split_config: SplitTrainingConfig) -> tuple[pd.DataFrame, pd.Series]:

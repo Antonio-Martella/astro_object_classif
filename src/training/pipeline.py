@@ -4,8 +4,8 @@ from typing import Any
 
 from imblearn.pipeline import Pipeline as ImbPipeline
 
-from configs.schemas import PreprocessingConfig
-from configs.schemas_loader import load_preprocessing_config
+from configs.pipeline_config import PreprocessingConfig
+from configs.pipeline_loader import load_preprocessing_config
 from src.data.preprocessing import build_stateful_ml_pipeline
 from src.data.resampling import ResamplerFactory
 from src.models.model_factory import ModelFactory
@@ -23,16 +23,18 @@ def build_training_pipeline(
     scaler_strategy: str,
     resampling_strategy: str | None,
     custom_params: dict[str, Any] | None,
+    verbose: int = 2,
 ) -> ImbPipeline:
     """
     Builds a complete training pipeline with preprocessing, optional resampling, and model training.
 
     Args:
-        - preprocess_config : Configuration for preprocessing steps. If None, loads default config.
-        - model_name : Name of the model to use (e.g., "random_forest", "xgboost").
-        - scaler_strategy : Strategy for feature scaling (e.g., "standard", "robust").
-        - resampling_strategy : Optional resampling strategy (e.g., "smote", "undersampling").
-        - custom_params : Optional custom hyperparameters for the model.
+        - preprocess_config (PreprocessingConfig, None) : Configuration for preprocessing steps. If None, loads default config.
+        - model_name (str) : Name of the model to use (e.g., "random_forest", "xgboost").
+        - scaler_strategy (str) : Strategy for feature scaling (e.g., "standard", "robust").
+        - resampling_strategy (str, None) : Optional resampling strategy (e.g., "smote", "undersampling").
+        - custom_params (dict, None) : Optional custom hyperparameters for the model.
+        - verbose (int) : verbosity of the function
 
     Returns:
         - ImbPipeline : A pipeline ready for training with fit() and predict().
@@ -57,6 +59,11 @@ def build_training_pipeline(
         resampling_strategy=(resampling_strategy, (str, type(None))),
         custom_params=(custom_params, (dict, type(None))),
     )
+
+    if verbose == 1:
+        logger.setLevel(logging.WARNING)
+    elif verbose == 2:
+        logger.setLevel(logging.ERROR)
 
     if preprocess_config is None:
         preprocess_config = load_preprocessing_config()

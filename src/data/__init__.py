@@ -10,6 +10,7 @@ from src.data.preprocessing import (
     build_stateless_cleaning_pipeline,
 )
 from src.data.resampling import ResamplerFactory
+from src.data.make_datasets import make_datasets
 
 __all__ = [
     "KaggleDownloader",
@@ -23,4 +24,5 @@ __all__ = [
     "SplitProductionSimulation",
     "ResamplerFactory",
     "load_and_split_data",
+    "make_datasets",
 ]
