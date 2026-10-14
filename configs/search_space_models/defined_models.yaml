@@ -1,0 +1,22 @@
+# =============================================================================
+# DEFINED MODELS REGISTRY CONFIGURATION
+# =============================================================================
+# Master catalog of supported model architectures recognized across the pipeline.
+# Each entry corresponds to an implementation in ModelFactory (src/models/model_factory.py)
+# and a dedicated hyperparameter search space in configs/search_space_models/<model_name>.yaml.
+
+names_defined_models:
+  # Ensemble & Tree-based Classifiers
+  - "random_forest"
+  - "extra_trees"
+  - "xgboost"
+  - "lightgbm"
+  - "catboost"
+
+  # Deep Neural Network Architecture
+  - "dense_nn"
+
+  # Linear & Kernel Classifiers
+  - "svc"
+  - "sgd"
+  - "logreg"

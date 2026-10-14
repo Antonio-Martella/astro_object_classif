@@ -1,0 +1,70 @@
+# =============================================================================
+# RANDOM FOREST CLASSIFIER HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: random_forest
+
+search_space:
+  # Number of bagging decision trees built in the ensemble
+  # Higher values reduce ensemble variance and stabilize predictions at the expense of runtime
+  random_forest_n_estimators:
+    type: int
+    low: 50
+    high: 500
+
+  # Maximum depth allowed for individual decision trees
+  # Limits tree depth to control model complexity and prevent overfitting on training noise
+  random_forest_max_depth:
+    type: int
+    low: 1
+    high: 30
+
+  # Minimum number of samples required to split an internal node
+  # Higher values restrict deep partitioning and enforce broader generalization per split
+  random_forest_min_samples_split:
+    type: int
+    low: 2
+    high: 20
+
+  # Minimum number of samples required to reside in any terminal leaf node
+  # Smooths leaf predictions and guarantees adequate statistical support in each leaf
+  random_forest_min_samples_leaf:
+    type: int
+    low: 1
+    high: 10
+
+  # Number of random features evaluated to find the optimal split at each node
+  # Subsampling features decorrelates trees; 'sqrt' is standard for classification, null uses all
+  random_forest_max_features:
+    type: categorical
+    choices: ["sqrt", "log2", null]
+
+  # Impurity criterion used to measure split quality across feature thresholds
+  # 'gini' minimizes class distribution variance; 'entropy' maximizes information gain
+  random_forest_criterion:
+    type: categorical
+    choices: ["gini", "entropy"]
+
+  # Whether bootstrap replacement sampling is activated when building trees
+  # True draws random bootstrap replicas with out-of-bag samples; False trains on full dataset
+  random_forest_bootstrap:
+    type: categorical
+    choices: [True, False]
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Automatically adjust weights inversely proportional to target class frequencies
+  random_forest_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Silence verbose training logs during Optuna trials
+  random_forest_verbose:
+    type: fixed
+    value: 0
+
+  # Utilize all available CPU threads for parallel training
+  random_forest_n_jobs:
+    type: fixed
+    value: -1

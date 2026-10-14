@@ -1,18 +1,31 @@
-data/*.csv
-data/*.json
-logs/*.log
+# data/
+data/**/*.csv
+data/**/*.json
 
-.DS_Store
+# logs/
+logs/**/*.log
+logs/optimization/*
 
-#saved_models/*.pkl
-__pycache__/
+# models/
+models/**/*.pkl
+
+# report/
+reports/**/*.png
+reports/**/*.json
+
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 mlruns/
 mlflow.db
 mlflow.db.backup
-*.log
+
 venv/
-.env
-.ruff_cache
-.mypy_cache
+
+
 catboost_info/
+
+
+*.DS_Store
+*__pycache__/

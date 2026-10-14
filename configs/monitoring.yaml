@@ -1,0 +1,46 @@
+# =============================================================================
+# PRODUCTION MONITORING & RETRAINING POLICY CONFIGURATION
+# =============================================================================
+
+# 1. Statistical Data Drift Detection
+drift_monitoring:
+  # Kolmogorov-Smirnov two-sample test threshold for individual feature drift
+  ks_threshold: 0.30
+
+  # Maximum acceptable shift in target class distribution
+  max_shift_class: 0.30
+
+  # Ratio of drifted features required to trigger a dataset-level drift alert (50%)
+  max_drift_ratio: 0.50
+
+
+# 2. Daily Batch Performance Tracking
+performance_monitoring:
+  # Primary metric monitored across daily production batches
+  metric_to_monitor: "f1_weighted"
+
+  # Minimum absolute score thresholds (global and per astrophysical class)
+  min_global_threshold: 0.95
+  min_sectorial_threshold: 0.93
+
+  # Maximum allowable relative drop compared to baseline before raising an alert
+  max_global_relative_drop: 0.04
+  max_sectorial_relative_drop: 0.07
+
+
+# 3. Automated Model Retraining Decision Policy
+retraining_policy:
+  # Reference metric used to evaluate retraining triggers
+  metric_to_monitor: "f1_weighted"
+
+  # Number of consecutive critical batches required to trigger model retraining
+  consecutive_critical_threshold: 3
+
+  # Sudden score drop in a single batch triggering immediate retraining
+  catastrophic_drop_threshold: 0.12
+
+  # Fraction of features in drift required to register a drift trigger
+  max_drift_ratio: 0.50
+
+  # Cooldown batches to wait after retraining before a new trigger can activate
+  cooldown_batches: 2

@@ -1,0 +1,97 @@
+# =============================================================================
+# LIGHTGBM CLASSIFIER HYPERPARAMETER SEARCH SPACE
+# =============================================================================
+model_name: lightgbm
+
+search_space:
+  # Number of boosting iterations (trees) built sequentially in the ensemble
+  # Higher values increase capacity and fit finer patterns, but increase training time and risk overfitting
+  lightgbm_n_estimators:
+    type: int
+    low: 50
+    high: 800
+
+  # Shrinkage step size applied to gradient updates of each newly added tree
+  # Lower rates require higher n_estimators for convergence but yield smoother optimization and superior generalization
+  lightgbm_learning_rate:
+    type: float
+    low: 0.001
+    high: 0.3
+    log: true
+
+  # Maximum number of leaves in each leaf-wise (best-first) tree
+  # Primary complexity control in LightGBM; higher values allow deep asymmetric splits but can overfit
+  lightgbm_num_leaves:
+    type: int
+    low: 20
+    high: 150
+
+  # Maximum tree depth limit applied alongside num_leaves
+  # Constrains individual tree depth to prevent overly deep, unbalanced branches during leaf-wise splits
+  lightgbm_max_depth:
+    type: int
+    low: 1
+    high: 30
+
+  # Minimum number of samples required inside any terminal leaf node (min_data_in_leaf)
+  # Acts as a key regularizer; higher values prevent leaves from isolating sample-specific noise
+  lightgbm_min_child_samples:
+    type: int
+    low: 5
+    high: 100
+
+  # Fraction of training instances randomly sampled without replacement per boosting round
+  # Subsampling decorrelates consecutive boosting trees and significantly speeds up training
+  lightgbm_subsample:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+
+  # Subsample ratio of columns (features) evaluated when constructing each boosting tree
+  # Column subsampling adds feature diversity and prevents domination by high-importance features
+  lightgbm_colsample_bytree:
+    type: float
+    low: 0.5
+    high: 1.0
+    log: false
+
+  # L1 regularization term on leaf output values (Lasso-like penalty)
+  # Encourages sparsity in leaf weights by shrinking irrelevant contributions strictly to zero
+  lightgbm_reg_alpha:
+    type: float
+    low: 0.001
+    high: 10.0
+    log: true
+
+  # L2 regularization term on leaf output values (Ridge-like penalty)
+  # Penalizes extreme leaf weights to smooth prediction updates and stabilize learning on noisy data
+  lightgbm_reg_lambda:
+    type: float
+    low: 0.001
+    high: 10.0
+    log: true
+
+
+  # ---------------------------------------------------------------------------
+  # Fixed Execution & Objective Parameters
+  # ---------------------------------------------------------------------------
+  # Automatically adjust weights inversely proportional to target class frequencies
+  lightgbm_class_weight:
+    type: fixed
+    value: "balanced"
+
+  # Multi-class categorical cross-entropy loss objective
+  lightgbm_objective:
+    type: fixed
+    value: "multiclass"
+
+  # Silence verbose training logs and warning outputs during Optuna trials (-1)
+  lightgbm_verbose:
+    type: fixed
+    value: -1
+
+  # Utilize all available CPU threads for parallel histogram building and tree construction
+  lightgbm_n_jobs:
+    type: fixed
+    value: -1

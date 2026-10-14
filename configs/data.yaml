@@ -1,0 +1,57 @@
+# =============================================================================
+# DATA PIPELINE CONFIGURATION (Ingestion, Holdout & Training Splits)
+# =============================================================================
+
+# 1. Raw Data Ingestion from Kaggle
+kaggle:
+  # Kaggle dataset slug and target CSV filename
+  dataset_path: "fedesoriano/stellar-classification-dataset-sdss17"
+  file_name: "star_classification.csv"
+
+  # Expected schema for data integrity verification
+  dataset_columns:
+    - "obj_ID"
+    - "alpha"
+    - "delta"
+    - "u"
+    - "g"
+    - "r"
+    - "i"
+    - "z"
+    - "run_ID"
+    - "rerun_ID"
+    - "cam_col"
+    - "field_ID"
+    - "spec_obj_ID"
+    - "class"
+    - "redshift"
+    - "plate"
+    - "MJD"
+    - "fiber_ID"
+
+  # Expected row count for validation
+  dataset_length: 100000
+
+
+# 2. Production Simulation (Holdout Dataset & Daily Streaming Batches)
+split_dataset_holdout:
+  # Number of observations per daily simulation batch
+  daily_split_batch_size: 1000
+
+  # Fraction of raw data reserved for production simulation (20%)
+  holdout_split: 0.2
+
+  # Chronological reference column for streaming simulation (Modified Julian Date)
+  ref_col: "MJD"
+
+
+# 3. Model Training & Evaluation Split
+split_dataset_training:
+  # Spatial grouping column to avoid data leakage across telescope observation fields
+  col_group: "field_ID"
+
+  # Train split ratio (85% train, 15% validation/test)
+  train_split: 0.85
+
+  # Supervised classification target column
+  target_column: "class"
