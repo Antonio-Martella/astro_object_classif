@@ -103,6 +103,9 @@ class DataPathConfig:
     monitoring_reports_dir: Path = REPORTS_DIR / "monitoring"
     retraining_decision_report: Path = monitoring_reports_dir / "retraining_decision_report.json"
 
+    # Figures
+    figures_dir: Path = REPORTS_DIR / "figures"
+
     # =========================================================================
     # 5. LOGGING LAYER (logs/)
     # =========================================================================
