@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 def _load_dataset(data_path: DataPathConfig | None = None) -> pd.DataFrame:
     """
     Load the dataset from a CSV file located at the specified path.
-    
+
     Args:
         data_path (DataPathConfig | None): Configuration object containing the path to the processed data CSV file
-    
+
     Returns:
         pd.DataFrame: The loaded dataset.
     """
@@ -41,8 +41,7 @@ def _load_dataset(data_path: DataPathConfig | None = None) -> pd.DataFrame:
 
 
 def _define_features_target(
-        df: pd.DataFrame, 
-        split_config: SplitTrainingConfig | None = None
+    df: pd.DataFrame, split_config: SplitTrainingConfig | None = None
 ) -> tuple[pd.DataFrame, pd.Series]:
     """
     Define the features and target variables from the dataset.
@@ -54,17 +53,14 @@ def _define_features_target(
     Returns:
         tuple[pd.DataFrame, pd.Series]: A tuple containing the features DataFrame and the target Series.
     """
-    validate_type(
-        df=(df, pd.DataFrame), 
-        split_config=(split_config, (SplitTrainingConfig, type(None)))
-    )
+    validate_type(df=(df, pd.DataFrame), split_config=(split_config, (SplitTrainingConfig, type(None))))
 
     split_config = load_split_training_config() if split_config is None else split_config
 
     if df.empty:
         raise ValueError("Dataset is empty!")
 
-    if not all([feature in df.columns for feature in [split_config.target_column, split_config.col_group]]): 
+    if not all([feature in df.columns for feature in [split_config.target_column, split_config.col_group]]):
         raise ValueError("Attention 'target' or 'col_group' column is not present in the provided dataset!")
 
     X, y = (
@@ -84,10 +80,10 @@ def _define_features_target(
 
 
 def _split_by_group(
-        X: pd.DataFrame, 
-        y: pd.Series, 
-        group_labels: pd.Series, 
-        split_config: SplitTrainingConfig | None = None,
+    X: pd.DataFrame,
+    y: pd.Series,
+    group_labels: pd.Series,
+    split_config: SplitTrainingConfig | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Split the dataset into training and testing sets while preserving the group structure defined by the reference column.
@@ -97,7 +93,7 @@ def _split_by_group(
         y (pd.Series): The target series.
         group_labels (pd.Series): The reference column used to define groups for splitting.
         split_config (SplitTrainingConfig | None): Configuration object containing the split parameters.
-    
+
     Returns:
         tuple: A tuple containing the indices for the training and testing sets.
     """
@@ -112,7 +108,7 @@ def _split_by_group(
 
     if X.empty:
         raise ValueError("The features DataFrame is empty!")
-    
+
     if y.empty:
         raise ValueError("The target Series is empty!")
 
@@ -120,16 +116,14 @@ def _split_by_group(
         raise ValueError("The group label Series is empty!")
 
     if not 0.0 < split_config.train_split < 1.0:
-        raise ValueError(
-            f"The fraction of train/test split is {split_config.train_split}, must be between (0.0, 1.0)"
-        )
+        raise ValueError(f"The fraction of train/test split is {split_config.train_split}, must be between (0.0, 1.0)")
 
     # let's create a GroupShuffleSplit object to split the dataset into training and testing sets
     # while preserving the group structure defined by the reference column (split_config.col_group).
     gss = GroupShuffleSplit(
-        n_splits=1,                            # Numeber of re-shuffling & splitting iterations
-        train_size=split_config.train_split,   # Proportion of the dataset to include in the train split
-        random_state=split_config.random_seed, # Random seed for reproducibility
+        n_splits=1,  # Numeber of re-shuffling & splitting iterations
+        train_size=split_config.train_split,  # Proportion of the dataset to include in the train split
+        random_state=split_config.random_seed,  # Random seed for reproducibility
     )
 
     # Generate indices to split the data into training and testing sets.
@@ -142,24 +136,24 @@ def _split_by_group(
 
 
 def load_and_split_data(
-    data_path: DataPathConfig | None = None, 
+    data_path: DataPathConfig | None = None,
     split_config: SplitTrainingConfig | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
     """
     Load the dataset from a CSV file and split it into training and testing sets while preserving the group structure.
-    
+
     Args:
         data_path (DataPathConfig | None): Configuration object containing the path to the processed data CSV file
         split_config (SplitTrainingConfig | None): Configuration object containing the column names for the target and group
             variables, as well as the split parameters.
-    
+
     Returns:
         tuple: A tuple containing the training and testing features DataFrames, the training and testing target
             Series, and the training and testing group labels Series.
     """
     validate_type(
-        data_path=(data_path, (DataPathConfig, type(None))), 
-        split_config=(split_config, (SplitTrainingConfig, type(None)))
+        data_path=(data_path, (DataPathConfig, type(None))),
+        split_config=(split_config, (SplitTrainingConfig, type(None))),
     )
 
     data_path = DataPathConfig() if data_path is None else data_path
